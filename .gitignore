@@ -12,3 +12,7 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+
+# Logs
+logs/
+*.log

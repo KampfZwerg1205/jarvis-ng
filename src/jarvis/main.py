@@ -11,14 +11,18 @@ def banner():
     console.print("=" * 55, style="bold cyan")
 
 
+def on_started():
+    console.print("[bold green]✔ Event empfangen: app.started[/bold green]")
+
+
 def main():
     banner()
 
     app = JarvisApp()
-    app.start()
 
-    console.print()
-    console.print("[bold green]JARVIS Kernel erfolgreich gestartet[/bold green]")
+    app.events.subscribe("app.started", on_started)
+
+    app.start()
 
 
 if __name__ == "__main__":

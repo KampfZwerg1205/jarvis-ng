@@ -8,3 +8,8 @@ src/jarvis.egg-info/PKG-INFO
 src/jarvis.egg-info/SOURCES.txt
 src/jarvis.egg-info/dependency_links.txt
 src/jarvis.egg-info/top_level.txt
+src/jarvis/core/__init__.py
+src/jarvis/core/app.py
+src/jarvis/core/config.py
+src/jarvis/core/constants.py
+src/jarvis/core/logger.py

@@ -5,13 +5,13 @@ from jarvis.core.app import JarvisApp
 console = Console()
 
 
-def banner() -> None:
-    console.print("=" * 50, style="bold cyan")
+def banner():
+    console.print("=" * 55, style="bold cyan")
     console.print("        JARVIS NEXT GENERATION", style="bold cyan")
-    console.print("=" * 50, style="bold cyan")
+    console.print("=" * 55, style="bold cyan")
 
 
-def main() -> None:
+def main():
     banner()
 
     app = JarvisApp()
@@ -19,3 +19,7 @@ def main() -> None:
 
     console.print()
     console.print("[bold green]JARVIS Kernel erfolgreich gestartet[/bold green]")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,12 +1,24 @@
 from jarvis.core.config import settings
+from jarvis.core.container import ServiceContainer
 from jarvis.core.events import EventBus
 from jarvis.core.logger import get_logger
 
 
 class JarvisApp:
     def __init__(self) -> None:
-        self.logger = get_logger()
-        self.events = EventBus()
+        self.container = ServiceContainer()
+
+        self.container.register("logger", get_logger())
+        self.container.register("settings", settings)
+        self.container.register("events", EventBus())
+
+    @property
+    def logger(self):
+        return self.container.get("logger")
+
+    @property
+    def events(self):
+        return self.container.get("events")
 
     def start(self) -> None:
         self.logger.info(

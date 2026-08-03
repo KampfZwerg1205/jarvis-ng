@@ -5,17 +5,17 @@ from jarvis.core.app import JarvisApp
 console = Console()
 
 
-def banner():
+def banner() -> None:
     console.print("=" * 55, style="bold cyan")
     console.print("        JARVIS NEXT GENERATION", style="bold cyan")
     console.print("=" * 55, style="bold cyan")
 
 
-def on_started():
-    console.print("[bold green]✔ Event empfangen: app.started[/bold green]")
+def on_started() -> None:
+    console.print("[bold green]✓ Event erhalten: app.started[/bold green]")
 
 
-def main():
+def main() -> None:
     banner()
 
     app = JarvisApp()

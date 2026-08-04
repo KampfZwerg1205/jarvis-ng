@@ -17,6 +17,6 @@ def test_router() -> None:
 
     router.register(DummyProvider())
 
-    result = router.chat("dummy", "Hallo")
+    result = router.chat("Hallo", provider="dummy")
 
     assert result == "Antwort auf: Hallo"

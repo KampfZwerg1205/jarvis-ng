@@ -1,15 +1,16 @@
-from __future__ import annotations
-
 from jarvis.ai.provider import AIProvider
 
 
 class GeminiProvider(AIProvider):
-    """Vorläufiger Gemini-Provider."""
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
 
     @property
     def name(self) -> str:
         return "gemini"
 
     def chat(self, prompt: str) -> str:
-        # Platzhalter – echte API folgt später
-        return f"[Gemini] {prompt}"
+        raise NotImplementedError(
+            "Gemini API wird im nächsten Sprint implementiert."
+        )

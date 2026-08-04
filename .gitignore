@@ -6,6 +6,11 @@ __pycache__/
 # Virtuelle Umgebung
 .venv/
 
+# Umgebungsvariablen
+.env
+.env.*
+!.env.example
+
 # Testdateien
 .pytest_cache/
 

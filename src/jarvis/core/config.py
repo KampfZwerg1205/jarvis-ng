@@ -9,6 +9,7 @@ BASE_DIR = Path(__file__).resolve().parents[3]
 class Settings(BaseSettings):
     app_name: str = "JARVIS-NG"
     version: str = "0.1.0-alpha.2"
+    gemini_model: str = "gemini-flash-latest"
 
     debug: bool = True
 

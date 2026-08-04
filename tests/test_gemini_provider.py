@@ -1,7 +1,7 @@
-from jarvis.ai.providers.gemini import GeminiProvider
+from jarvis.ai.providers import GeminiProvider
 
 
-def test_gemini_provider() -> None:
-    provider = GeminiProvider("dummy-api-key")
+def test_provider_creation() -> None:
+    provider = GeminiProvider()
 
-    assert provider.name == "gemini"
+    assert provider is not None

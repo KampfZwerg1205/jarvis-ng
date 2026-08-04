@@ -15,6 +15,7 @@ Requires-Dist: loguru>=0.7
 Requires-Dist: pydantic>=2.13
 Requires-Dist: pydantic-settings>=2.14
 Requires-Dist: python-dotenv>=1.2
+Requires-Dist: google-genai>=1.30.0
 Provides-Extra: dev
 Requires-Dist: pytest>=9.1; extra == "dev"
 Requires-Dist: ruff>=0.16; extra == "dev"

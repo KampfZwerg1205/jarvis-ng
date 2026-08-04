@@ -6,6 +6,7 @@ loguru>=0.7
 pydantic>=2.13
 pydantic-settings>=2.14
 python-dotenv>=1.2
+google-genai>=1.30.0
 
 [dev]
 pytest>=9.1

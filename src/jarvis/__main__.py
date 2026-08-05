@@ -1,4 +1,4 @@
-from .main import main
+from jarvis.cli.app import app
 
 if __name__ == "__main__":
-    main()
+    app()

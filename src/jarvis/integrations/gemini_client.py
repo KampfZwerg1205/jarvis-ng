@@ -18,9 +18,15 @@ class GeminiClient:
         self.client = genai.Client(api_key=api_key)
 
     def chat(self, prompt: str) -> str:
+        full_prompt = (
+            f"{settings.system_prompt}\n\n"
+            f"Benutzer:\n{prompt}\n\n"
+            f"Assistent:"
+        )
+
         response = self.client.models.generate_content(
             model=settings.gemini_model,
-            contents=prompt,
+            contents=full_prompt,
         )
 
         if response.text is None:

@@ -24,3 +24,6 @@ class ConversationHistory:
     @property
     def messages(self) -> list[Message]:
         return list(self._messages)
+
+    def as_dicts(self) -> list[dict[str, str]]:
+        return [message.to_dict() for message in self._messages]

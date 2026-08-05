@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     ollama_host: str = "http://localhost:11434"
     openai_api_key: str = ""
 
+    system_prompt: str = (
+    "Du bist JARVIS-NG, ein intelligenter, höflicher und präziser KI-Assistent. "
+    "Antworte auf Deutsch, sofern der Nutzer keine andere Sprache verwendet."
+)
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

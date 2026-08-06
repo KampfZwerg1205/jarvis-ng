@@ -7,3 +7,4 @@ app = typer.Typer(
 )
 
 from jarvis.cli import commands
+from jarvis.cli import chat

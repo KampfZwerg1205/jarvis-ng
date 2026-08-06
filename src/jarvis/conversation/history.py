@@ -27,3 +27,14 @@ class ConversationHistory:
 
     def as_dicts(self) -> list[dict[str, str]]:
         return [message.to_dict() for message in self._messages]
+
+    def as_text(self) -> str:
+        """Gibt den Gesprächsverlauf als formatierten Text zurück."""
+
+        lines: list[str] = []
+
+        for message in self._messages:
+            role = "Benutzer" if message.role == "user" else "JARVIS"
+            lines.append(f"{role}: {message.content}")
+
+        return "\n".join(lines)

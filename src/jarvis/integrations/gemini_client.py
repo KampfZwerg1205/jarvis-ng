@@ -20,7 +20,7 @@ class GeminiClient:
     def chat(self, prompt: str) -> str:
         full_prompt = (
             f"{settings.system_prompt}\n\n"
-            f"Benutzer:\n{prompt}\n\n"
+            f"{prompt}\n\n"
             f"Assistent:"
         )
 

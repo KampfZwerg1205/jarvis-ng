@@ -11,10 +11,11 @@ class ConversationManager:
         self.history = ConversationHistory()
 
     def chat(self, prompt: str) -> str:
-
         self.history.add_user(prompt)
 
-        answer = self.router.chat(prompt)
+        conversation = self.history.as_text()
+
+        answer = self.router.chat(conversation)
 
         self.history.add_assistant(answer)
 

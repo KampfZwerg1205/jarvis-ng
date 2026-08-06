@@ -17,7 +17,9 @@ def chat() -> None:
     console.print("=" * 55, style="bold cyan")
 
     console.print("\n[green]JARVIS ist bereit.[/green]")
-    console.print("[dim]Tippe 'exit' zum Beenden.[/dim]\n")
+    console.print(
+        "[dim]Befehle: /clear, /history, /exit[/dim]\n"
+    )
 
     router = AIRouter()
     router.register(GeminiProvider())
@@ -27,12 +29,36 @@ def chat() -> None:
     while True:
         prompt = input("Du: ")
 
-        if prompt.lower() in ("exit", "quit"):
+        if prompt.lower() in ("exit", "quit", "/exit"):
             console.print("\n[cyan]JARVIS beendet.[/cyan]")
             break
+
+        if prompt.lower() == "/clear":
+            conversation.history.clear()
+            console.print(
+                "[green]✓ Gesprächsverlauf gelöscht.[/green]"
+            )
+            continue
+
+        if prompt.lower() == "/history":
+            history = conversation.history.as_text()
+
+            if history:
+                console.print("\n[cyan]Gesprächsverlauf:[/cyan]")
+                console.print(history)
+                console.print()
+            else:
+                console.print(
+                    "[dim]Noch kein Gesprächsverlauf vorhanden.[/dim]"
+                )
+
+            continue
 
         try:
             answer = conversation.chat(prompt)
             console.print(f"[yellow]JARVIS:[/yellow] {answer}")
+
         except Exception as exc:
-            console.print(f"[bold red]Fehler:[/bold red] {exc}")
+            console.print(
+                f"[bold red]Fehler:[/bold red] {exc}"
+            )

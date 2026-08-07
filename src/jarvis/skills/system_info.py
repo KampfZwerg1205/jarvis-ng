@@ -1,29 +1,37 @@
 from __future__ import annotations
 
+import os
 import platform
-import socket
-import getpass
 
 from jarvis.skills.base import Skill
 
 
 class SystemInfoSkill(Skill):
-    """Liefert Informationen über das System."""
+    """Liefert Informationen über das aktuelle System."""
 
     @property
     def name(self) -> str:
         return "system_info"
 
     def can_handle(self, prompt: str) -> bool:
-        prompt = prompt.lower()
+        prompt = prompt.lower().strip()
 
         keywords = (
-            "betriebssystem",
+            "welches betriebssystem",
             "welches system",
-            "mein pc",
-            "computername",
+            "was für ein betriebssystem",
+            "was für ein system",
+            "wie heißt mein pc",
+            "wie heisst mein pc",
             "pc name",
+            "computername",
             "hostname",
+            "welchen prozessor",
+            "welche cpu",
+            "meine cpu",
+            "wie viel ram",
+            "wie viel arbeitsspeicher",
+            "arbeitsspeicher",
         )
 
         return any(keyword in prompt for keyword in keywords)
@@ -35,28 +43,57 @@ class SystemInfoSkill(Skill):
         return 0.0
 
     def execute(self, prompt: str) -> str:
-        prompt = prompt.lower()
+        prompt = prompt.lower().strip()
 
-        if "betriebssystem" in prompt or "system" in prompt:
-            return (
-                f"Du nutzt {platform.system()} "
-                f"{platform.release()}."
-            )
-
+        # Betriebssystem
         if (
-            "pc" in prompt
+            "betriebssystem" in prompt
+            or "welches system" in prompt
+            or "was für ein system" in prompt
+        ):
+            system = platform.system()
+            release = platform.release()
+
+            return f"Du verwendest {system} {release}."
+
+        # PC-Name
+        if (
+            "wie heißt mein pc" in prompt
+            or "wie heisst mein pc" in prompt
+            or "pc name" in prompt
             or "computername" in prompt
             or "hostname" in prompt
         ):
-            return (
-                f"Der Name deines PCs ist "
-                f"{socket.gethostname()}."
-            )
+            hostname = platform.node()
 
-        if "benutzer" in prompt:
-            return (
-                f"Du bist angemeldet als "
-                f"{getpass.getuser()}."
-            )
+            return f"Der Name deines PCs ist {hostname}."
 
-        return "Keine Systeminformation gefunden."
+        # Prozessor
+        if (
+            "prozessor" in prompt
+            or "welche cpu" in prompt
+            or "meine cpu" in prompt
+        ):
+            processor = platform.processor()
+
+            if not processor:
+                processor = "unbekannt"
+
+            return f"Dein Prozessor ist {processor}."
+
+        # RAM
+        if (
+            "wie viel ram" in prompt
+            or "arbeitsspeicher" in prompt
+        ):
+            try:
+                import psutil
+
+                ram_gb = psutil.virtual_memory().total / (1024 ** 3)
+
+                return f"Du hast {ram_gb:.1f} GB Arbeitsspeicher."
+
+            except ImportError:
+                return "Die RAM-Information ist momentan nicht verfügbar."
+
+        return "Diese Systeminformation wird noch nicht unterstützt."

@@ -30,8 +30,10 @@ class GeminiClient:
                 contents=full_prompt,
             )
 
-        except Exception:
-            return "Meine Gemini-Verbindung ist momentan nicht verfügbar."
+        except Exception as exc:
+            raise RuntimeError(
+                "Gemini nicht verfügbar"
+            ) from exc
 
         if response.text is None:
             return ""

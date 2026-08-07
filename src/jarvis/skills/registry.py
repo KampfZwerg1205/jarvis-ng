@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from jarvis.skills.base import Skill
 from jarvis.skills.calculator import CalculatorSkill
-from jarvis.skills.system import SystemSkill
 from jarvis.skills.time import TimeSkill
 from jarvis.skills.system_actions import SystemActionSkill
+from jarvis.skills.system_info import SystemInfoSkill
 
 
 class SkillRegistry:
@@ -22,10 +22,5 @@ class SkillRegistry:
     def load_defaults(self) -> None:
         self.register(TimeSkill())
         self.register(CalculatorSkill())
-        self.register(SystemSkill())
-
-    def load_defaults(self) -> None:
-        self.register(TimeSkill())
-        self.register(CalculatorSkill())
-        self.register(SystemSkill())
         self.register(SystemActionSkill())
+        self.register(SystemInfoSkill())

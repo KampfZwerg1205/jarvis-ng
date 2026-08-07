@@ -25,6 +25,12 @@ class SystemActionSkill(Skill):
 
         return any(command in prompt for command in commands)
 
+    def confidence(self, prompt: str) -> float:
+        if self.can_handle(prompt):
+            return 1.0
+
+        return 0.0
+
     def execute(self, prompt: str) -> str:
         prompt = prompt.lower()
 

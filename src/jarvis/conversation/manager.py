@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from jarvis.ai.router import AIRouter
 from jarvis.conversation.history import ConversationHistory
+from jarvis.skills.calculator import CalculatorSkill
 from jarvis.skills.router import SkillRouter
 from jarvis.skills.time import TimeSkill
 
@@ -14,6 +15,7 @@ class ConversationManager:
 
         self.skills = SkillRouter()
         self.skills.register(TimeSkill())
+        self.skills.register(CalculatorSkill())
 
     def chat(self, prompt: str) -> str:
         self.history.add_user(prompt)

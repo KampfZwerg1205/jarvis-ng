@@ -44,3 +44,55 @@ class SystemActions:
 
         except (OSError, FileNotFoundError):
             return False
+
+    @staticmethod
+    def lock_pc() -> bool:
+        """Sperrt den Windows-PC."""
+
+        try:
+            result = subprocess.run(
+                ["rundll32.exe", "user32.dll,LockWorkStation"],
+                check=False,
+            )
+
+            return result.returncode == 0
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def restart_pc() -> bool:
+        """Startet Windows neu."""
+
+        try:
+            subprocess.Popen(
+                ["shutdown.exe", "/r", "/t", "0"]
+            )
+            return True
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def shutdown_pc() -> bool:
+        """Fährt Windows herunter."""
+
+        try:
+            subprocess.Popen(
+                ["shutdown.exe", "/s", "/t", "0"]
+            )
+            return True
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def open_settings() -> bool:
+        """Öffnet die Windows-Einstellungen."""
+
+        try:
+            os.startfile("ms-settings:")
+            return True
+
+        except OSError:
+            return False

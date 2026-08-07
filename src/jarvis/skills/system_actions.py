@@ -20,9 +20,41 @@ class SystemActionSkill(Skill):
         prompt = prompt.lower().strip()
 
         commands = (
+            # Anwendungen
             "öffne ",
             "starte ",
             "mach auf ",
+
+            # PC sperren
+            "sperre meinen pc",
+            "sperr meinen pc",
+            "sperre den pc",
+            "sperr den pc",
+
+            # Herunterfahren
+            "fahre meinen pc herunter",
+            "fahr meinen pc herunter",
+            "fahre den pc herunter",
+            "fahr den pc herunter",
+            "fahre meinen computer herunter",
+            "fahr meinen computer herunter",
+            "pc herunterfahren",
+            "computer herunterfahren",
+            "herunterfahren",
+
+            # Neustart
+            "starte meinen pc neu",
+            "starte den pc neu",
+            "starte meinen computer neu",
+            "starte den computer neu",
+            "pc neu starten",
+            "computer neu starten",
+            "pc neustarten",
+            "computer neustarten",
+
+            # Einstellungen
+            "öffne die einstellungen",
+            "öffne einstellungen",
         )
 
         return any(command in prompt for command in commands)
@@ -36,34 +68,105 @@ class SystemActionSkill(Skill):
     def execute(self, prompt: str) -> str:
         prompt = prompt.lower().strip()
 
+        # ---------------------------------------------------------
+        # PC sperren
+        # ---------------------------------------------------------
+
+        if (
+            "sperre meinen pc" in prompt
+            or "sperr meinen pc" in prompt
+            or "sperre den pc" in prompt
+            or "sperr den pc" in prompt
+        ):
+            return (
+                "Die PC-Sperre ist erkannt. "
+                "Die eigentliche Aktion wird später über eine "
+                "Sicherheitsbestätigung ausgeführt."
+            )
+
+        # ---------------------------------------------------------
+        # Herunterfahren
+        # ---------------------------------------------------------
+
+        if (
+            "fahre meinen pc herunter" in prompt
+            or "fahr meinen pc herunter" in prompt
+            or "fahre den pc herunter" in prompt
+            or "fahr den pc herunter" in prompt
+            or "fahre meinen computer herunter" in prompt
+            or "fahr meinen computer herunter" in prompt
+            or "pc herunterfahren" in prompt
+            or "computer herunterfahren" in prompt
+            or prompt == "herunterfahren"
+        ):
+            return (
+                "Das Herunterfahren wurde erkannt. "
+                "Eine Sicherheitsbestätigung wird benötigt."
+            )
+
+        # ---------------------------------------------------------
+        # Neustart
+        # ---------------------------------------------------------
+
+        if (
+            "starte meinen pc neu" in prompt
+            or "starte den pc neu" in prompt
+            or "starte meinen computer neu" in prompt
+            or "starte den computer neu" in prompt
+            or "pc neu starten" in prompt
+            or "computer neu starten" in prompt
+            or "pc neustarten" in prompt
+            or "computer neustarten" in prompt
+        ):
+            return (
+                "Der Neustart wurde erkannt. "
+                "Eine Sicherheitsbestätigung wird benötigt."
+            )
+
+        # ---------------------------------------------------------
+        # Windows-Einstellungen
+        # ---------------------------------------------------------
+
+        if (
+            "öffne die einstellungen" in prompt
+            or "öffne einstellungen" in prompt
+        ):
+            if SystemActions.open_settings():
+                return "Die Windows-Einstellungen wurden geöffnet."
+
+            return "Die Windows-Einstellungen konnten nicht geöffnet werden."
+
+        # ---------------------------------------------------------
         # Notepad
+        # ---------------------------------------------------------
+
         if "notepad" in prompt or "editor" in prompt:
             if SystemActions.open_notepad():
                 return "Notepad wurde geöffnet."
 
             return "Notepad konnte nicht gestartet werden."
 
+        # ---------------------------------------------------------
         # Taschenrechner
+        # ---------------------------------------------------------
+
         if "taschenrechner" in prompt or "rechner" in prompt:
             if SystemActions.open_calculator():
                 return "Der Taschenrechner wurde geöffnet."
 
             return "Der Taschenrechner konnte nicht gestartet werden."
 
-        # Bekannte Synonyme
+        # ---------------------------------------------------------
+        # Bekannte App-Synonyme
+        # ---------------------------------------------------------
+
         aliases = {
             "vs code": "visual studio code",
             "vscode": "visual studio code",
-            "visual studio code": "visual studio code",
-            "steam": "steam",
-            "spotify": "spotify",
-            "firefox": "firefox",
-            "discord": "discord",
             "chrome": "google chrome",
             "edge": "microsoft edge",
         }
 
-        # Alias auflösen
         application_name = None
 
         for alias, real_name in aliases.items():
@@ -71,15 +174,16 @@ class SystemActionSkill(Skill):
                 application_name = real_name
                 break
 
-        # Wenn kein Alias gefunden wurde,
-        # direkt nach App-Namen suchen
+        # ---------------------------------------------------------
+        # Installierte Anwendungen
+        # ---------------------------------------------------------
+
         if application_name is None:
             for name in self.applications:
                 if name.lower() in prompt:
                     application_name = name
                     break
 
-        # Anwendung starten
         if application_name is not None:
             path = self.applications.get(application_name)
 
@@ -88,35 +192,4 @@ class SystemActionSkill(Skill):
 
             return f"{application_name} konnte nicht gestartet werden."
 
-        return "Ich konnte diese Anwendung nicht finden."
-
-    def _extract_application_name(self, prompt: str) -> str | None:
-        """Entfernt den Sprachbefehl und gibt den App-Namen zurück."""
-
-        text = prompt.lower().strip()
-
-        for command in (
-            "öffne ",
-            "starte ",
-            "mach auf ",
-        ):
-            if text.startswith(command):
-                text = text[len(command):]
-                break
-
-        text = text.strip()
-
-        # Artikel entfernen
-        for article in (
-            "den ",
-            "die ",
-            "das ",
-            "der ",
-        ):
-            if text.startswith(article):
-                text = text[len(article):]
-                break
-
-        text = text.strip()
-
-        return text if text else None
+        return "Ich konnte diese Systemaktion nicht finden."

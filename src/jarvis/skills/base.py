@@ -21,3 +21,14 @@ class Skill(ABC):
     def execute(self, prompt: str) -> str:
         """Führt den Skill aus."""
         raise NotImplementedError
+
+    def confidence(self, prompt: str) -> float:
+        """
+        Gibt die Sicherheit zurück, dass dieser Skill zuständig ist.
+
+        Wert zwischen 0.0 und 1.0
+        """
+        if self.can_handle(prompt):
+            return 0.5
+
+        return 0.0

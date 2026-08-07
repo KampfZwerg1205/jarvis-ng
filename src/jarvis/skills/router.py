@@ -13,11 +13,16 @@ class SkillRouter:
         self._skills.append(skill)
 
     def find(self, prompt: str) -> Skill | None:
+        matches: list[Skill] = []
+
         for skill in self._skills:
             if skill.can_handle(prompt):
-                return skill
+                matches.append(skill)
 
-        return None
+        if not matches:
+            return None
+
+        return matches[0]
 
     def execute(self, prompt: str) -> str | None:
         skill = self.find(prompt)

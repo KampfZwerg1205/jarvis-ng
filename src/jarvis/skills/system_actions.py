@@ -46,7 +46,7 @@ class SystemActionSkill(Skill):
         # Taschenrechner
         if "taschenrechner" in prompt or "rechner" in prompt:
             if SystemActions.open_calculator():
-                return "Der Taschenrechner wurde gestartet."
+                return "Der Taschenrechner wurde geöffnet."
 
             return "Der Taschenrechner konnte nicht gestartet werden."
 
@@ -89,3 +89,34 @@ class SystemActionSkill(Skill):
             return f"{application_name} konnte nicht gestartet werden."
 
         return "Ich konnte diese Anwendung nicht finden."
+
+    def _extract_application_name(self, prompt: str) -> str | None:
+        """Entfernt den Sprachbefehl und gibt den App-Namen zurück."""
+
+        text = prompt.lower().strip()
+
+        for command in (
+            "öffne ",
+            "starte ",
+            "mach auf ",
+        ):
+            if text.startswith(command):
+                text = text[len(command):]
+                break
+
+        text = text.strip()
+
+        # Artikel entfernen
+        for article in (
+            "den ",
+            "die ",
+            "das ",
+            "der ",
+        ):
+            if text.startswith(article):
+                text = text[len(article):]
+                break
+
+        text = text.strip()
+
+        return text if text else None

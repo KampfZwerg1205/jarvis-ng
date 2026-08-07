@@ -24,10 +24,14 @@ class GeminiClient:
             f"Assistent:"
         )
 
-        response = self.client.models.generate_content(
-            model=settings.gemini_model,
-            contents=full_prompt,
-        )
+        try:
+            response = self.client.models.generate_content(
+                model=settings.gemini_model,
+                contents=full_prompt,
+            )
+
+        except Exception:
+            return "Meine Gemini-Verbindung ist momentan nicht verfügbar."
 
         if response.text is None:
             return ""

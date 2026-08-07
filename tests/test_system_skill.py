@@ -21,3 +21,19 @@ def test_system_skill_returns_computer_name() -> None:
     result = skill.execute("Wie heißt mein Computer?")
 
     assert "Der Computer heißt" in result
+
+
+def test_system_skill_returns_python_version() -> None:
+    skill = SystemSkill()
+
+    result = skill.execute("Welche Python Version benutze ich?")
+
+    assert "Python" in result
+
+
+def test_system_skill_returns_cpu_information() -> None:
+    skill = SystemSkill()
+
+    result = skill.execute("Welche CPU habe ich?")
+
+    assert "Prozessor" in result

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from jarvis.ai.router import AIRouter
 from jarvis.conversation.history import ConversationHistory
+from jarvis.skills.router import SkillRouter
+from jarvis.skills.time import TimeSkill
 
 
 class ConversationManager:
@@ -10,12 +12,19 @@ class ConversationManager:
         self.router = router
         self.history = ConversationHistory()
 
+        self.skills = SkillRouter()
+        self.skills.register(TimeSkill())
+
     def chat(self, prompt: str) -> str:
         self.history.add_user(prompt)
 
-        conversation = self.history.as_text()
+        skill_answer = self.skills.execute(prompt)
 
-        answer = self.router.chat(conversation)
+        if skill_answer is not None:
+            answer = skill_answer
+        else:
+            conversation = self.history.as_text()
+            answer = self.router.chat(conversation)
 
         self.history.add_assistant(answer)
 

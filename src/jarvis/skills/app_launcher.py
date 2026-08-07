@@ -4,10 +4,14 @@ import os
 import subprocess
 
 from jarvis.skills.base import Skill
+from jarvis.system.applications import ApplicationScanner
 
 
 class AppLauncherSkill(Skill):
     """Startet installierte Programme."""
+
+    def __init__(self) -> None:
+        self.scanner = ApplicationScanner()
 
     @property
     def name(self) -> str:
@@ -33,52 +37,12 @@ class AppLauncherSkill(Skill):
     def execute(self, prompt: str) -> str:
         prompt = prompt.lower()
 
-        apps = {
-            "firefox": [
-                r"C:\Program Files\Mozilla Firefox\firefox.exe",
-                r"C:\Program Files (x86)\Mozilla Firefox\firefox.exe",
-            ],
+        applications = self.scanner.scan()
 
-            "discord": [
-                os.path.expandvars(
-                    r"%LOCALAPPDATA%\Discord\Update.exe"
-                ),
-            ],
+        for app_name, shortcut in applications.items():
+            if app_name in prompt:
+                os.startfile(shortcut)
 
-            "vscode": [
-                os.path.expandvars(
-                    r"%LOCALAPPDATA%\Programs\Microsoft VS Code\Code.exe"
-                ),
-            ],
+                return f"{app_name} wurde gestartet."
 
-            "visual studio code": [
-                os.path.expandvars(
-                    r"%LOCALAPPDATA%\Programs\Microsoft VS Code\Code.exe"
-                ),
-            ],
-
-            "steam": [
-                r"C:\Program Files (x86)\Steam\steam.exe",
-            ],
-
-            "spotify": [
-                os.path.expandvars(
-                    r"%APPDATA%\Spotify\Spotify.exe"
-                ),
-            ],
-        }
-
-        for name, paths in apps.items():
-            if name in prompt:
-
-                for path in paths:
-                    if os.path.exists(path):
-                        subprocess.Popen(path)
-                        return f"{name} wurde gestartet."
-
-                return (
-                    f"{name} wurde gefunden, "
-                    "aber der Installationspfad wurde nicht gefunden."
-                )
-
-        return "Diese Anwendung kenne ich noch nicht."
+        return "Diese Anwendung wurde nicht gefunden."

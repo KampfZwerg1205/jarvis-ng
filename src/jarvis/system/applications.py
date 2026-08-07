@@ -28,8 +28,9 @@ class ApplicationScanner:
                 continue
 
             for shortcut in location.rglob("*.lnk"):
-                name = shortcut.stem.lower()
+                name = shortcut.stem.lower().strip()
 
-                apps[name] = str(shortcut)
+                if name:
+                    apps[name] = str(shortcut)
 
         return apps

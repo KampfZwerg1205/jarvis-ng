@@ -24,6 +24,12 @@ class TimeSkill(Skill):
 
         return any(keyword in prompt for keyword in keywords)
 
+    def confidence(self, prompt: str) -> float:
+        if self.can_handle(prompt):
+            return 0.9
+
+        return 0.0
+
     def execute(self, prompt: str) -> str:
         current_time = datetime.now().strftime("%H:%M:%S")
 

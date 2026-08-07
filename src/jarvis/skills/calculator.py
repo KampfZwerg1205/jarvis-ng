@@ -38,6 +38,12 @@ class CalculatorSkill(Skill):
             and any(char.isdigit() for char in prompt)
         )
 
+    def confidence(self, prompt: str) -> float:
+        if self.can_handle(prompt):
+            return 0.9
+
+        return 0.0
+
     def execute(self, prompt: str) -> str:
         expression = self._extract_expression(prompt)
 

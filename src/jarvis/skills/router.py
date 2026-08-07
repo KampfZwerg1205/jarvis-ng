@@ -6,6 +6,8 @@ from jarvis.skills.base import Skill
 class SkillRouter:
     """Verwaltet und findet passende Skills."""
 
+    MIN_CONFIDENCE = 0.7
+
     def __init__(self) -> None:
         self._skills: list[Skill] = []
 
@@ -22,6 +24,9 @@ class SkillRouter:
             if score > best_score:
                 best_score = score
                 best_skill = skill
+
+        if best_score < self.MIN_CONFIDENCE:
+            return None
 
         return best_skill
 

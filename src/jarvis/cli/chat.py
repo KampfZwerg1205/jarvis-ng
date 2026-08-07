@@ -1,5 +1,6 @@
 from rich.console import Console
 
+from jarvis.ai.providers import OllamaProvider
 from jarvis.ai.providers import GeminiProvider
 from jarvis.ai.router import AIRouter
 from jarvis.cli.app import app
@@ -23,6 +24,7 @@ def chat() -> None:
 
     router = AIRouter()
     router.register(GeminiProvider())
+    router.register(OllamaProvider())
 
     conversation = ConversationManager(router)
 

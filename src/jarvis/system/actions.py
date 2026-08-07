@@ -5,47 +5,42 @@ import subprocess
 
 
 class SystemActions:
-    """Führt Systemaktionen aus."""
+    """Führt sichere Systemaktionen unter Windows aus."""
 
     @staticmethod
     def open_notepad() -> bool:
         try:
-            subprocess.Popen(
-                ["notepad.exe"],
-                shell=True,
-            )
-
+            subprocess.Popen(["notepad.exe"])
             return True
-
-        except Exception:
+        except OSError:
             return False
-
 
     @staticmethod
     def open_calculator() -> bool:
         try:
-            subprocess.Popen(
-                ["calc.exe"],
-                shell=True,
-            )
-
+            subprocess.Popen(["calc.exe"])
             return True
-
-        except Exception:
+        except OSError:
             return False
-
 
     @staticmethod
     def open_application(path: str) -> bool:
-        """
-        Öffnet eine gefundene Anwendung.
-        Unterstützt .exe und .lnk Dateien.
-        """
+        """Startet eine Anwendung oder Windows-Verknüpfung."""
+
+        if not path:
+            return False
 
         try:
-            os.startfile(path)
+            path = os.path.expandvars(path)
 
+            # Windows-Verknüpfungen (.lnk) direkt über Windows öffnen.
+            if path.lower().endswith(".lnk"):
+                os.startfile(path)
+                return True
+
+            # Normale ausführbare Dateien starten.
+            subprocess.Popen([path])
             return True
 
-        except Exception:
+        except (OSError, FileNotFoundError):
             return False

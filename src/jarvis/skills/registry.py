@@ -7,6 +7,7 @@ from jarvis.skills.system_actions import SystemActionSkill
 from jarvis.skills.system_info import SystemInfoSkill
 from jarvis.skills.app_launcher import AppLauncherSkill
 from jarvis.skills.volume import VolumeSkill
+from jarvis.skills.media import MediaSkill
 
 
 class SkillRegistry:
@@ -28,3 +29,4 @@ class SkillRegistry:
         self.register(SystemInfoSkill())
         self.register(AppLauncherSkill())
         self.register(VolumeSkill())
+        self.register(MediaSkill())

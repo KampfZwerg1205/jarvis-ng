@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ctypes
 import os
 import subprocess
 
@@ -34,12 +33,10 @@ class SystemActions:
         try:
             path = os.path.expandvars(path)
 
-            # Windows-Verknüpfungen (.lnk) direkt über Windows öffnen.
             if path.lower().endswith(".lnk"):
                 os.startfile(path)
                 return True
 
-            # Normale ausführbare Dateien starten.
             subprocess.Popen([path])
             return True
 
@@ -52,10 +49,7 @@ class SystemActions:
 
         try:
             result = subprocess.run(
-                [
-                    "rundll32.exe",
-                    "user32.dll,LockWorkStation",
-                ],
+                ["rundll32.exe", "user32.dll,LockWorkStation"],
                 check=False,
             )
 
@@ -70,14 +64,8 @@ class SystemActions:
 
         try:
             subprocess.Popen(
-                [
-                    "shutdown.exe",
-                    "/r",
-                    "/t",
-                    "0",
-                ]
+                ["shutdown.exe", "/r", "/t", "0"]
             )
-
             return True
 
         except OSError:
@@ -89,14 +77,8 @@ class SystemActions:
 
         try:
             subprocess.Popen(
-                [
-                    "shutdown.exe",
-                    "/s",
-                    "/t",
-                    "0",
-                ]
+                ["shutdown.exe", "/s", "/t", "0"]
             )
-
             return True
 
         except OSError:
@@ -113,31 +95,18 @@ class SystemActions:
         except OSError:
             return False
 
-    # ---------------------------------------------------------
-    # Lautstärke
-    # ---------------------------------------------------------
-
     @staticmethod
     def volume_up() -> bool:
         """Erhöht die Windows-Lautstärke."""
 
         try:
-            VK_VOLUME_UP = 0xAF
+            import ctypes
 
-            for _ in range(2):
-                ctypes.windll.user32.keybd_event(
-                    VK_VOLUME_UP,
-                    0,
-                    0,
-                    0,
-                )
+            user32 = ctypes.windll.user32
 
-                ctypes.windll.user32.keybd_event(
-                    VK_VOLUME_UP,
-                    0,
-                    2,
-                    0,
-                )
+            for _ in range(5):
+                user32.keybd_event(0xAF, 0, 0, 0)
+                user32.keybd_event(0xAF, 0, 2, 0)
 
             return True
 
@@ -149,22 +118,13 @@ class SystemActions:
         """Verringert die Windows-Lautstärke."""
 
         try:
-            VK_VOLUME_DOWN = 0xAE
+            import ctypes
 
-            for _ in range(2):
-                ctypes.windll.user32.keybd_event(
-                    VK_VOLUME_DOWN,
-                    0,
-                    0,
-                    0,
-                )
+            user32 = ctypes.windll.user32
 
-                ctypes.windll.user32.keybd_event(
-                    VK_VOLUME_DOWN,
-                    0,
-                    2,
-                    0,
-                )
+            for _ in range(5):
+                user32.keybd_event(0xAE, 0, 0, 0)
+                user32.keybd_event(0xAE, 0, 2, 0)
 
             return True
 
@@ -173,24 +133,66 @@ class SystemActions:
 
     @staticmethod
     def volume_mute() -> bool:
-        """Schaltet Windows stumm bzw. wieder auf Ton."""
+        """Schaltet den Windows-Ton stumm bzw. wieder ein."""
 
         try:
-            VK_VOLUME_MUTE = 0xAD
+            import ctypes
 
-            ctypes.windll.user32.keybd_event(
-                VK_VOLUME_MUTE,
-                0,
-                0,
-                0,
-            )
+            user32 = ctypes.windll.user32
 
-            ctypes.windll.user32.keybd_event(
-                VK_VOLUME_MUTE,
-                0,
-                2,
-                0,
-            )
+            user32.keybd_event(0xAD, 0, 0, 0)
+            user32.keybd_event(0xAD, 0, 2, 0)
+
+            return True
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def media_play_pause() -> bool:
+        """Startet oder pausiert die Medienwiedergabe."""
+
+        try:
+            import ctypes
+
+            user32 = ctypes.windll.user32
+
+            user32.keybd_event(0xB3, 0, 0, 0)
+            user32.keybd_event(0xB3, 0, 2, 0)
+
+            return True
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def media_next() -> bool:
+        """Springt zum nächsten Titel."""
+
+        try:
+            import ctypes
+
+            user32 = ctypes.windll.user32
+
+            user32.keybd_event(0xB0, 0, 0, 0)
+            user32.keybd_event(0xB0, 0, 2, 0)
+
+            return True
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def media_previous() -> bool:
+        """Springt zum vorherigen Titel."""
+
+        try:
+            import ctypes
+
+            user32 = ctypes.windll.user32
+
+            user32.keybd_event(0xB1, 0, 0, 0)
+            user32.keybd_event(0xB1, 0, 2, 0)
 
             return True
 

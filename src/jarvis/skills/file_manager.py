@@ -15,38 +15,44 @@ class FileManagerSkill(Skill):
         prompt = prompt.lower().strip()
 
         commands = (
-            # Downloads
-            "öffne downloads",
-            "öffne den downloads",
+            # Öffnen
+            "öffne ",
+            "zeige mir ",
+            "mach ",
+            "mach auf ",
 
-            # Dokumente
-            "öffne dokumente",
-            "öffne die dokumente",
-            "öffne den dokumente",
-
-            # Desktop
-            "öffne desktop",
-            "öffne den desktop",
-
-            # Bilder
-            "öffne bilder",
-            "öffne die bilder",
-
-            # Videos
-            "öffne videos",
-            "öffne die videos",
-
-            # Musik
-            "öffne musik",
-            "öffne die musik",
-
-            # Papierkorb
-            "öffne papierkorb",
-            "öffne den papierkorb",
-            "öffne den papierkorb auf",
+            # Bekannte Ordner
+            "downloads",
+            "dokumente",
+            "desktop",
+            "bilder",
+            "videos",
+            "musik",
+            "papierkorb",
         )
 
-        return any(command in prompt for command in commands)
+        # Wir wollen nicht jedes beliebige "mach" abfangen.
+        folder_names = (
+            "downloads",
+            "dokumente",
+            "desktop",
+            "bilder",
+            "videos",
+            "musik",
+            "papierkorb",
+        )
+
+        open_commands = (
+            "öffne ",
+            "zeige mir ",
+            "mach ",
+            "mach auf ",
+        )
+
+        return (
+            any(command in prompt for command in open_commands)
+            and any(folder in prompt for folder in folder_names)
+        )
 
     def confidence(self, prompt: str) -> float:
         if self.can_handle(prompt):

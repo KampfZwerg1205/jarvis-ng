@@ -10,6 +10,7 @@ from jarvis.skills.volume import VolumeSkill
 from jarvis.skills.media import MediaSkill
 from jarvis.skills.window import WindowSkill
 from jarvis.skills.file_manager import FileManagerSkill
+from jarvis.skills.file_info import FileInfoSkill
 
 
 class SkillRegistry:
@@ -34,3 +35,4 @@ class SkillRegistry:
         self.register(MediaSkill())
         self.register(WindowSkill())
         self.register(FileManagerSkill())
+        self.register(FileInfoSkill())

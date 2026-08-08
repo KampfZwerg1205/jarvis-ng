@@ -95,6 +95,10 @@ class SystemActions:
         except OSError:
             return False
 
+    # ---------------------------------------------------------
+    # Lautstärke
+    # ---------------------------------------------------------
+
     @staticmethod
     def volume_up() -> bool:
         """Erhöht die Windows-Lautstärke."""
@@ -148,6 +152,10 @@ class SystemActions:
         except OSError:
             return False
 
+    # ---------------------------------------------------------
+    # Mediensteuerung
+    # ---------------------------------------------------------
+
     @staticmethod
     def media_play_pause() -> bool:
         """Startet oder pausiert die Medienwiedergabe."""
@@ -193,6 +201,130 @@ class SystemActions:
 
             user32.keybd_event(0xB1, 0, 0, 0)
             user32.keybd_event(0xB1, 0, 2, 0)
+
+            return True
+
+        except OSError:
+            return False
+
+    # ---------------------------------------------------------
+    # Fenstersteuerung
+    # ---------------------------------------------------------
+
+    @staticmethod
+    def minimize_window() -> bool:
+        """Minimiert das aktuell aktive Fenster."""
+
+        try:
+            import ctypes
+
+            user32 = ctypes.windll.user32
+
+            hwnd = user32.GetForegroundWindow()
+
+            if not hwnd:
+                return False
+
+            user32.ShowWindow(hwnd, 6)
+
+            return True
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def maximize_window() -> bool:
+        """Maximiert das aktuell aktive Fenster."""
+
+        try:
+            import ctypes
+
+            user32 = ctypes.windll.user32
+
+            hwnd = user32.GetForegroundWindow()
+
+            if not hwnd:
+                return False
+
+            user32.ShowWindow(hwnd, 3)
+
+            return True
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def close_window() -> bool:
+        """Schließt das aktuell aktive Fenster."""
+
+        try:
+            import ctypes
+
+            user32 = ctypes.windll.user32
+
+            hwnd = user32.GetForegroundWindow()
+
+            if not hwnd:
+                return False
+
+            WM_CLOSE = 0x0010
+
+            user32.PostMessageW(
+                hwnd,
+                WM_CLOSE,
+                0,
+                0,
+            )
+
+            return True
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def show_desktop() -> bool:
+        """Zeigt den Windows-Desktop an."""
+
+        try:
+            subprocess.Popen(
+                [
+                    "explorer.exe",
+                    "shell:::{3080F90D-D7AD-11D9-BD98-0000947B0257}",
+                ]
+            )
+
+            return True
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def switch_window() -> bool:
+        """Wechselt zum nächsten Windows-Fenster."""
+
+        try:
+            import ctypes
+
+            user32 = ctypes.windll.user32
+
+            VK_MENU = 0x12
+            VK_TAB = 0x09
+            KEYEVENTF_KEYUP = 0x0002
+
+            user32.keybd_event(VK_MENU, 0, 0, 0)
+            user32.keybd_event(VK_TAB, 0, 0, 0)
+            user32.keybd_event(
+                VK_TAB,
+                0,
+                KEYEVENTF_KEYUP,
+                0,
+            )
+            user32.keybd_event(
+                VK_MENU,
+                0,
+                KEYEVENTF_KEYUP,
+                0,
+            )
 
             return True
 

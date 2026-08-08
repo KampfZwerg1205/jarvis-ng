@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ctypes
 import os
 import subprocess
 
@@ -51,7 +52,10 @@ class SystemActions:
 
         try:
             result = subprocess.run(
-                ["rundll32.exe", "user32.dll,LockWorkStation"],
+                [
+                    "rundll32.exe",
+                    "user32.dll,LockWorkStation",
+                ],
                 check=False,
             )
 
@@ -66,8 +70,14 @@ class SystemActions:
 
         try:
             subprocess.Popen(
-                ["shutdown.exe", "/r", "/t", "0"]
+                [
+                    "shutdown.exe",
+                    "/r",
+                    "/t",
+                    "0",
+                ]
             )
+
             return True
 
         except OSError:
@@ -79,8 +89,14 @@ class SystemActions:
 
         try:
             subprocess.Popen(
-                ["shutdown.exe", "/s", "/t", "0"]
+                [
+                    "shutdown.exe",
+                    "/s",
+                    "/t",
+                    "0",
+                ]
             )
+
             return True
 
         except OSError:
@@ -92,6 +108,90 @@ class SystemActions:
 
         try:
             os.startfile("ms-settings:")
+            return True
+
+        except OSError:
+            return False
+
+    # ---------------------------------------------------------
+    # Lautstärke
+    # ---------------------------------------------------------
+
+    @staticmethod
+    def volume_up() -> bool:
+        """Erhöht die Windows-Lautstärke."""
+
+        try:
+            VK_VOLUME_UP = 0xAF
+
+            for _ in range(2):
+                ctypes.windll.user32.keybd_event(
+                    VK_VOLUME_UP,
+                    0,
+                    0,
+                    0,
+                )
+
+                ctypes.windll.user32.keybd_event(
+                    VK_VOLUME_UP,
+                    0,
+                    2,
+                    0,
+                )
+
+            return True
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def volume_down() -> bool:
+        """Verringert die Windows-Lautstärke."""
+
+        try:
+            VK_VOLUME_DOWN = 0xAE
+
+            for _ in range(2):
+                ctypes.windll.user32.keybd_event(
+                    VK_VOLUME_DOWN,
+                    0,
+                    0,
+                    0,
+                )
+
+                ctypes.windll.user32.keybd_event(
+                    VK_VOLUME_DOWN,
+                    0,
+                    2,
+                    0,
+                )
+
+            return True
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def volume_mute() -> bool:
+        """Schaltet Windows stumm bzw. wieder auf Ton."""
+
+        try:
+            VK_VOLUME_MUTE = 0xAD
+
+            ctypes.windll.user32.keybd_event(
+                VK_VOLUME_MUTE,
+                0,
+                0,
+                0,
+            )
+
+            ctypes.windll.user32.keybd_event(
+                VK_VOLUME_MUTE,
+                0,
+                2,
+                0,
+            )
+
             return True
 
         except OSError:

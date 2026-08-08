@@ -49,12 +49,18 @@ class ConversationManager:
         skill = self.skills.find(prompt)
 
         if skill is not None:
+
             # Gefährliche Aktionen zunächst nur bestätigen lassen.
             if skill.name == "system_actions":
                 normalized = prompt.lower().strip()
 
+                # -------------------------------------------------
+                # Herunterfahren
+                # -------------------------------------------------
+
                 if self._is_shutdown_command(normalized):
                     self.pending_action = "shutdown"
+
                     answer = (
                         "Sir, soll ich den PC wirklich herunterfahren? "
                         "(Ja/Nein)"
@@ -63,10 +69,30 @@ class ConversationManager:
                     self.history.add_assistant(answer)
                     return answer
 
+                # -------------------------------------------------
+                # Neustart
+                # -------------------------------------------------
+
                 if self._is_restart_command(normalized):
                     self.pending_action = "restart"
+
                     answer = (
                         "Sir, soll ich den PC wirklich neu starten? "
+                        "(Ja/Nein)"
+                    )
+
+                    self.history.add_assistant(answer)
+                    return answer
+
+                # -------------------------------------------------
+                # PC sperren
+                # -------------------------------------------------
+
+                if self._is_lock_command(normalized):
+                    self.pending_action = "lock"
+
+                    answer = (
+                        "Sir, soll ich den PC wirklich sperren? "
                         "(Ja/Nein)"
                     )
 
@@ -118,6 +144,7 @@ class ConversationManager:
 
         if answer in no_words:
             self.pending_action = None
+
             return "Verstanden. Der Vorgang wurde abgebrochen."
 
         # ---------------------------------------------------------
@@ -126,7 +153,12 @@ class ConversationManager:
 
         if answer in yes_words:
             action = self.pending_action
+
             self.pending_action = None
+
+            # -----------------------------------------------------
+            # Herunterfahren
+            # -----------------------------------------------------
 
             if action == "shutdown":
                 if SystemActions.shutdown_pc():
@@ -134,17 +166,31 @@ class ConversationManager:
 
                 return "Der PC konnte nicht heruntergefahren werden."
 
+            # -----------------------------------------------------
+            # Neustart
+            # -----------------------------------------------------
+
             if action == "restart":
                 if SystemActions.restart_pc():
                     return "Der PC wird jetzt neu gestartet."
 
                 return "Der PC konnte nicht neu gestartet werden."
 
+            # -----------------------------------------------------
+            # PC sperren
+            # -----------------------------------------------------
+
+            if action == "lock":
+                if SystemActions.lock_pc():
+                    return "Der PC wurde gesperrt."
+
+                return "Der PC konnte nicht gesperrt werden."
+
         # ---------------------------------------------------------
         # Unklare Antwort
         # ---------------------------------------------------------
 
-        return "Bitte antworten Sie mit „Ja“ oder „Nein“."
+        return 'Bitte antworten Sie mit "Ja" oder "Nein".'
 
     @staticmethod
     def _is_shutdown_command(prompt: str) -> bool:
@@ -177,6 +223,25 @@ class ConversationManager:
             "computer neu starten",
             "pc neustarten",
             "computer neustarten",
+        )
+
+        return any(command in prompt for command in commands)
+
+    @staticmethod
+    def _is_lock_command(prompt: str) -> bool:
+        """Erkennt Befehle zum Sperren des PCs."""
+
+        commands = (
+            "sperre meinen pc",
+            "sperr meinen pc",
+            "sperre den pc",
+            "sperr den pc",
+            "sperre meinen computer",
+            "sperr meinen computer",
+            "sperre den computer",
+            "sperr den computer",
+            "pc sperren",
+            "computer sperren",
         )
 
         return any(command in prompt for command in commands)

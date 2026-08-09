@@ -24,6 +24,8 @@ class FileSearchSkill(Skill):
             "wo ist ",
             "wo liegt ",
             "wo befindet sich ",
+            "findest du ",
+            "kannst du ",
         )
 
         folders = (
@@ -116,7 +118,11 @@ class FileSearchSkill(Skill):
         return None
 
     def _extract_search_name(self, prompt: str) -> str | None:
-        text = prompt
+        text = prompt.lower().strip()
+
+        # ---------------------------------------------------------
+        # BEFEHL ENTFERNEN
+        # ---------------------------------------------------------
 
         commands = (
             "finde ",
@@ -125,12 +131,49 @@ class FileSearchSkill(Skill):
             "wo ist ",
             "wo liegt ",
             "wo befindet sich ",
+            "findest du ",
+            "kannst du ",
         )
 
         for command in commands:
             if text.startswith(command):
                 text = text[len(command):]
                 break
+
+        # ---------------------------------------------------------
+        # HILFSWÖRTER ENTFERNEN
+        # ---------------------------------------------------------
+
+        prefixes = (
+            "nach ",
+            "meine ",
+            "meinen ",
+            "mein ",
+            "meiner ",
+            "meinem ",
+            "die ",
+            "der ",
+            "das ",
+            "den ",
+            "eine ",
+            "einen ",
+            "ein ",
+        )
+
+        changed = True
+
+        while changed:
+            changed = False
+
+            for prefix in prefixes:
+                if text.startswith(prefix):
+                    text = text[len(prefix):].strip()
+                    changed = True
+                    break
+
+        # ---------------------------------------------------------
+        # ORDNER AUS DEM SUCHTEXT ENTFERNEN
+        # ---------------------------------------------------------
 
         folders = (
             "downloads",
@@ -146,16 +189,47 @@ class FileSearchSkill(Skill):
                 f" in {folder}",
                 "",
             )
+
             text = text.replace(
                 f" auf {folder}",
                 "",
             )
 
-        text = text.strip()
+            text = text.replace(
+                f" im {folder}",
+                "",
+            )
+
+            text = text.replace(
+                f" auf dem {folder}",
+                "",
+            )
+
+            text = text.replace(
+                f" in den {folder}",
+                "",
+            )
+
+            text = text.replace(
+                f" in die {folder}",
+                "",
+            )
+
+        # ---------------------------------------------------------
+        # FRAGEZEICHEN UND SATZZEICHEN ENTFERNEN
+        # ---------------------------------------------------------
+
+        text = text.strip(" .,!?")
+
+        # ---------------------------------------------------------
+        # NACHGESTELLTE WÖRTER ENTFERNEN
+        # ---------------------------------------------------------
 
         endings = (
             " bitte",
             " suchen",
+            " finden",
+            " heraus",
         )
 
         changed = True
@@ -168,6 +242,12 @@ class FileSearchSkill(Skill):
                     text = text[:-len(ending)].strip()
                     changed = True
 
+        # ---------------------------------------------------------
+        # ERNEUT BEREINIGEN
+        # ---------------------------------------------------------
+
+        text = text.strip(" .,!?")
+
         return text if text else None
 
     def _search(
@@ -175,7 +255,7 @@ class FileSearchSkill(Skill):
         folder: Path,
         search_name: str,
     ) -> list[Path]:
-        search_name = search_name.lower()
+        search_name = search_name.lower().strip()
 
         matches: list[Path] = []
 

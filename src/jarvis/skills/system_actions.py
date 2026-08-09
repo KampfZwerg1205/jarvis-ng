@@ -2,15 +2,10 @@ from __future__ import annotations
 
 from jarvis.skills.base import Skill
 from jarvis.system.actions import SystemActions
-from jarvis.system.applications import ApplicationScanner
 
 
 class SystemActionSkill(Skill):
     """Führt sichere, vordefinierte Systemaktionen aus."""
-
-    def __init__(self) -> None:
-        self.scanner = ApplicationScanner()
-        self.applications = self.scanner.scan()
 
     @property
     def name(self) -> str:
@@ -20,71 +15,47 @@ class SystemActionSkill(Skill):
         prompt = prompt.lower().strip()
 
         commands = (
-            # -----------------------------------------------------
-            # NOTEPAD / EDITOR
-            # -----------------------------------------------------
+            # PC sperren
+            "sperre meinen pc",
+            "sperr meinen pc",
+            "sperre den pc",
+            "sperr den pc",
 
-            "öffne notepad",
-            "öffne den notepad",
-            "starte notepad",
-            "starte den notepad",
-
-            "öffne editor",
-            "öffne den editor",
-            "starte editor",
-            "starte den editor",
-
-            # -----------------------------------------------------
-            # TASCHENRECHNER
-            # -----------------------------------------------------
-
-            "öffne taschenrechner",
-            "öffne den taschenrechner",
-            "starte taschenrechner",
-            "starte den taschenrechner",
-
-            "öffne rechner",
-            "öffne den rechner",
-            "starte rechner",
-            "starte den rechner",
-
-            # -----------------------------------------------------
-            # HERUNTERFAHREN
-            # -----------------------------------------------------
-
+            # Herunterfahren
             "fahre meinen pc herunter",
             "fahr meinen pc herunter",
             "fahre den pc herunter",
             "fahr den pc herunter",
-
+            "fahre meinen computer herunter",
+            "fahr meinen computer herunter",
             "pc herunterfahren",
             "computer herunterfahren",
             "herunterfahren",
 
-            # -----------------------------------------------------
-            # NEUSTART
-            # -----------------------------------------------------
-
+            # Neustart
             "starte meinen pc neu",
             "starte den pc neu",
-
+            "starte meinen computer neu",
+            "starte den computer neu",
             "pc neu starten",
             "computer neu starten",
+            "pc neustarten",
+            "computer neustarten",
 
-            "neustart",
-            "neu starten",
+            # Windows-Einstellungen
+            "öffne die einstellungen",
+            "öffne einstellungen",
 
-            # -----------------------------------------------------
-            # PC SPERREN
-            # -----------------------------------------------------
+            # Taschenrechner
+            "öffne den taschenrechner",
+            "öffne taschenrechner",
+            "öffne den rechner",
+            "öffne rechner",
 
-            "sperre meinen pc",
-            "sperre den pc",
-
-            "pc sperren",
-            "computer sperren",
-
-            "sperren",
+            # Notepad / Editor
+            "öffne notepad",
+            "öffne den editor",
+            "öffne editor",
         )
 
         return any(command in prompt for command in commands)
@@ -99,17 +70,75 @@ class SystemActionSkill(Skill):
         prompt = prompt.lower().strip()
 
         # ---------------------------------------------------------
-        # NOTEPAD / EDITOR
+        # PC sperren
         # ---------------------------------------------------------
 
-        if "notepad" in prompt or "editor" in prompt:
-            if SystemActions.open_notepad():
-                return "Notepad wurde geöffnet."
-
-            return "Notepad konnte nicht gestartet werden."
+        if (
+            "sperre meinen pc" in prompt
+            or "sperr meinen pc" in prompt
+            or "sperre den pc" in prompt
+            or "sperr den pc" in prompt
+        ):
+            return (
+                "Die PC-Sperre ist erkannt. "
+                "Die eigentliche Aktion wird später über eine "
+                "Sicherheitsbestätigung ausgeführt."
+            )
 
         # ---------------------------------------------------------
-        # TASCHENRECHNER
+        # Herunterfahren
+        # ---------------------------------------------------------
+
+        if (
+            "fahre meinen pc herunter" in prompt
+            or "fahr meinen pc herunter" in prompt
+            or "fahre den pc herunter" in prompt
+            or "fahr den pc herunter" in prompt
+            or "fahre meinen computer herunter" in prompt
+            or "fahr meinen computer herunter" in prompt
+            or "pc herunterfahren" in prompt
+            or "computer herunterfahren" in prompt
+            or prompt == "herunterfahren"
+        ):
+            return (
+                "Das Herunterfahren wurde erkannt. "
+                "Eine Sicherheitsbestätigung wird benötigt."
+            )
+
+        # ---------------------------------------------------------
+        # Neustart
+        # ---------------------------------------------------------
+
+        if (
+            "starte meinen pc neu" in prompt
+            or "starte den pc neu" in prompt
+            or "starte meinen computer neu" in prompt
+            or "starte den computer neu" in prompt
+            or "pc neu starten" in prompt
+            or "computer neu starten" in prompt
+            or "pc neustarten" in prompt
+            or "computer neustarten" in prompt
+        ):
+            return (
+                "Der Neustart wurde erkannt. "
+                "Eine Sicherheitsbestätigung wird benötigt."
+            )
+
+        # ---------------------------------------------------------
+        # Windows-Einstellungen
+        # ---------------------------------------------------------
+
+        if (
+            "öffne die einstellungen" in prompt
+            or "öffne einstellungen" in prompt
+        ):
+            if SystemActions.open_settings():
+                return "Die Windows-Einstellungen wurden geöffnet."
+
+            return "Die Windows-Einstellungen konnten nicht geöffnet werden."
+
+        # ---------------------------------------------------------
+        # Taschenrechner
         # ---------------------------------------------------------
 
         if (
@@ -122,56 +151,16 @@ class SystemActionSkill(Skill):
             return "Der Taschenrechner konnte nicht gestartet werden."
 
         # ---------------------------------------------------------
-        # HERUNTERFAHREN
+        # Notepad / Editor
         # ---------------------------------------------------------
 
         if (
-            "herunterfahren" in prompt
-            or "fahre meinen pc herunter" in prompt
-            or "fahr meinen pc herunter" in prompt
-            or "fahre den pc herunter" in prompt
-            or "fahr den pc herunter" in prompt
-            or "herunter" in prompt
+            "notepad" in prompt
+            or "editor" in prompt
         ):
-            return (
-                "Das Herunterfahren wurde erkannt. "
-                "Eine Sicherheitsbestätigung wird benötigt."
-            )
+            if SystemActions.open_notepad():
+                return "Notepad wurde geöffnet."
 
-        # ---------------------------------------------------------
-        # NEUSTART
-        # ---------------------------------------------------------
+            return "Notepad konnte nicht gestartet werden."
 
-        if (
-            "neu starten" in prompt
-            or "neustart" in prompt
-            or "starte meinen pc neu" in prompt
-            or "starte den pc neu" in prompt
-        ):
-            return (
-                "Der Neustart wurde erkannt. "
-                "Eine Sicherheitsbestätigung wird benötigt."
-            )
-
-        # ---------------------------------------------------------
-        # PC SPERREN
-        # ---------------------------------------------------------
-
-        if (
-            "sperre meinen pc" in prompt
-            or "sperre den pc" in prompt
-            or "pc sperren" in prompt
-            or "computer sperren" in prompt
-            or prompt == "sperren"
-        ):
-            return (
-                "Die PC-Sperre wurde erkannt. "
-                "Die eigentliche Aktion wird später über "
-                "eine Sicherheitsbestätigung ausgeführt."
-            )
-
-        # ---------------------------------------------------------
-        # FALLBACK
-        # ---------------------------------------------------------
-
-        return "Diese Systemaktion wird noch nicht unterstützt."
+        return "Ich konnte diese Systemaktion nicht finden."

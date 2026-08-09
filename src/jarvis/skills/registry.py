@@ -11,6 +11,7 @@ from jarvis.skills.media import MediaSkill
 from jarvis.skills.window import WindowSkill
 from jarvis.skills.file_manager import FileManagerSkill
 from jarvis.skills.file_info import FileInfoSkill
+from jarvis.skills.file_search import FileSearchSkill
 
 
 class SkillRegistry:
@@ -36,3 +37,4 @@ class SkillRegistry:
         self.register(WindowSkill())
         self.register(FileManagerSkill())
         self.register(FileInfoSkill())
+        self.register(FileSearchSkill())

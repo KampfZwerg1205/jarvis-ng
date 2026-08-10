@@ -147,3 +147,42 @@ class FileActions:
 
         except OSError:
             return False
+
+    @staticmethod
+    def rename_file(
+        source: str | Path,
+        new_name: str,
+    ) -> bool:
+        """Benennt eine Datei um."""
+
+        try:
+            source_path = Path(source).expanduser()
+
+            if not source_path.exists():
+                return False
+
+            if not source_path.is_file():
+                return False
+
+            new_name = new_name.strip()
+
+            if not new_name:
+                return False
+
+            # Der neue Name darf nur ein Dateiname sein.
+            # Es darf kein zusätzlicher Pfad angegeben werden.
+            if Path(new_name).name != new_name:
+                return False
+
+            destination = source_path.with_name(new_name)
+
+            # Vorhandene Dateien werden nicht überschrieben.
+            if destination.exists():
+                return False
+
+            source_path.rename(destination)
+
+            return True
+
+        except OSError:
+            return False

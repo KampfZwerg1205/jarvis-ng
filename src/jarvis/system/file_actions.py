@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -76,6 +77,70 @@ class FileActions:
                     "explorer.exe",
                     "shell:RecycleBinFolder",
                 ]
+            )
+
+            return True
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def copy_file(
+        source: str | Path,
+        destination: str | Path,
+    ) -> bool:
+        """Kopiert eine Datei an ein Ziel."""
+
+        try:
+            source_path = Path(source).expanduser()
+            destination_path = Path(destination).expanduser()
+
+            if not source_path.exists():
+                return False
+
+            if not source_path.is_file():
+                return False
+
+            destination_path.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            shutil.copy2(
+                source_path,
+                destination_path,
+            )
+
+            return True
+
+        except OSError:
+            return False
+
+    @staticmethod
+    def move_file(
+        source: str | Path,
+        destination: str | Path,
+    ) -> bool:
+        """Verschiebt eine Datei an ein Ziel."""
+
+        try:
+            source_path = Path(source).expanduser()
+            destination_path = Path(destination).expanduser()
+
+            if not source_path.exists():
+                return False
+
+            if not source_path.is_file():
+                return False
+
+            destination_path.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            shutil.move(
+                str(source_path),
+                str(destination_path),
             )
 
             return True

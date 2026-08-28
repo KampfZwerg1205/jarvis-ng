@@ -15,6 +15,7 @@ from jarvis.skills.file_search import FileSearchSkill
 from jarvis.skills.file_operations import FileOperationsSkill
 from jarvis.skills.file_rename import FileRenameSkill
 from jarvis.skills.file_delete import FileDeleteSkill
+from jarvis.skills.file_recycle_bin import FileRecycleBinSkill
 
 
 class SkillRegistry:
@@ -45,3 +46,4 @@ class SkillRegistry:
         self.register(FileOperationsSkill())
         self.register(FileRenameSkill())
         self.register(FileDeleteSkill())
+        self.register(FileRecycleBinSkill())

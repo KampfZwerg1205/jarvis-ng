@@ -5,6 +5,7 @@ from jarvis.conversation.history import ConversationHistory
 from jarvis.skills.router import SkillRouter
 from jarvis.skills.registry import SkillRegistry
 from jarvis.system.actions import SystemActions
+from jarvis.system.file_actions import FileActions
 
 
 class ConversationManager:
@@ -24,6 +25,7 @@ class ConversationManager:
 
         # Wartet auf eine Bestätigung für eine gefährliche Aktion.
         self.pending_action: str | None = None
+        self.pending_file: str | None = None
 
     def chat(self, prompt: str) -> str:
         prompt = prompt.strip()
@@ -50,13 +52,12 @@ class ConversationManager:
 
         if skill is not None:
 
-            # Gefährliche Aktionen zunächst nur bestätigen lassen.
+            # -----------------------------------------------------
+            # Gefährliche Systemaktionen
+            # -----------------------------------------------------
+
             if skill.name == "system_actions":
                 normalized = prompt.lower().strip()
-
-                # -------------------------------------------------
-                # Herunterfahren
-                # -------------------------------------------------
 
                 if self._is_shutdown_command(normalized):
                     self.pending_action = "shutdown"
@@ -69,10 +70,6 @@ class ConversationManager:
                     self.history.add_assistant(answer)
                     return answer
 
-                # -------------------------------------------------
-                # Neustart
-                # -------------------------------------------------
-
                 if self._is_restart_command(normalized):
                     self.pending_action = "restart"
 
@@ -84,10 +81,6 @@ class ConversationManager:
                     self.history.add_assistant(answer)
                     return answer
 
-                # -------------------------------------------------
-                # PC sperren
-                # -------------------------------------------------
-
                 if self._is_lock_command(normalized):
                     self.pending_action = "lock"
 
@@ -98,6 +91,43 @@ class ConversationManager:
 
                     self.history.add_assistant(answer)
                     return answer
+
+            # -----------------------------------------------------
+            # Datei löschen
+            # -----------------------------------------------------
+
+            if skill.name == "file_delete":
+                source_name = skill._parse_command(prompt)
+
+                if source_name is None:
+                    answer = (
+                        "Ich konnte die zu löschende Datei "
+                        "nicht erkennen."
+                    )
+
+                    self.history.add_assistant(answer)
+                    return answer
+
+                source = skill._find_source(source_name)
+
+                if source is None:
+                    answer = (
+                        f"Ich konnte '{source_name}' nicht finden."
+                    )
+
+                    self.history.add_assistant(answer)
+                    return answer
+
+                self.pending_action = "delete_file"
+                self.pending_file = str(source)
+
+                answer = (
+                    f"Sir, soll ich die Datei '{source.name}' "
+                    "wirklich löschen? (Ja/Nein)"
+                )
+
+                self.history.add_assistant(answer)
+                return answer
 
             answer = skill.execute(prompt)
 
@@ -144,6 +174,7 @@ class ConversationManager:
 
         if answer in no_words:
             self.pending_action = None
+            self.pending_file = None
 
             return "Verstanden. Der Vorgang wurde abgebrochen."
 
@@ -153,8 +184,23 @@ class ConversationManager:
 
         if answer in yes_words:
             action = self.pending_action
+            file_path = self.pending_file
 
             self.pending_action = None
+            self.pending_file = None
+
+            # -----------------------------------------------------
+            # Datei löschen
+            # -----------------------------------------------------
+
+            if action == "delete_file":
+                if file_path is None:
+                    return "Die Datei konnte nicht ermittelt werden."
+
+                if FileActions.delete_file(file_path):
+                    return "Die Datei wurde gelöscht."
+
+                return "Die Datei konnte nicht gelöscht werden."
 
             # -----------------------------------------------------
             # Herunterfahren

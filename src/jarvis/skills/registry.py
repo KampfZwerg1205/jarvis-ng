@@ -14,6 +14,7 @@ from jarvis.skills.file_info import FileInfoSkill
 from jarvis.skills.file_search import FileSearchSkill
 from jarvis.skills.file_operations import FileOperationsSkill
 from jarvis.skills.file_rename import FileRenameSkill
+from jarvis.skills.file_delete import FileDeleteSkill
 
 
 class SkillRegistry:
@@ -37,8 +38,10 @@ class SkillRegistry:
         self.register(VolumeSkill())
         self.register(MediaSkill())
         self.register(WindowSkill())
+
         self.register(FileManagerSkill())
         self.register(FileInfoSkill())
         self.register(FileSearchSkill())
         self.register(FileOperationsSkill())
         self.register(FileRenameSkill())
+        self.register(FileDeleteSkill())

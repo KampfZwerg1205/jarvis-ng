@@ -186,3 +186,28 @@ class FileActions:
 
         except OSError:
             return False
+
+    @staticmethod
+    def delete_file(
+        source: str | Path,
+    ) -> bool:
+        """Löscht eine einzelne Datei."""
+
+        try:
+            source_path = Path(source).expanduser()
+
+            if not source_path.exists():
+                return False
+
+            # Sicherheitsregel:
+            # Diese Methode löscht ausschließlich Dateien,
+            # niemals komplette Ordner.
+            if not source_path.is_file():
+                return False
+
+            source_path.unlink()
+
+            return True
+
+        except OSError:
+            return False

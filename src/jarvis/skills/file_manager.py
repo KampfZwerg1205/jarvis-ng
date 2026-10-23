@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 from jarvis.skills.base import Skill
 from jarvis.system.file_actions import FileActions
 
@@ -7,12 +10,34 @@ from jarvis.system.file_actions import FileActions
 class FileManagerSkill(Skill):
     """Öffnet bekannte Dateien und Windows-Ordner."""
 
+    USER_FOLDERS = {
+        "downloads": "Downloads",
+        "dokumente": "Documents",
+        "desktop": "Desktop",
+        "bilder": "Pictures",
+        "videos": "Videos",
+        "musik": "Music",
+    }
+
+    SUBFOLDER_COMMAND = re.compile(
+        r"^(?:öffne|oeffne|mach(?: auf)?)\s+"
+        r"(?:bitte\s+)?(?:den\s+)?ordner\s+(.+?)\s+"
+        r"(?:auf dem|auf|im|in)\s+"
+        r"(desktop|downloads|dokumente|bilder|videos|musik)[.!?]*$",
+        re.IGNORECASE,
+    )
+
     @property
     def name(self) -> str:
         return "file_manager"
 
     def can_handle(self, prompt: str) -> bool:
         prompt = prompt.lower().strip()
+
+        if self._parse_subfolder_command(prompt) is not None:
+            return True
+        if "ordner" in prompt and prompt.startswith(("öffne ", "oeffne ", "mach ")):
+            return False
 
         commands = (
             # Öffnen
@@ -62,6 +87,20 @@ class FileManagerSkill(Skill):
 
     def execute(self, prompt: str) -> str:
         prompt = prompt.lower().strip()
+
+        subfolder = self._parse_subfolder_command(prompt)
+        if subfolder is not None:
+            folder_name, parent_name = subfolder
+            parent = Path.home() / self.USER_FOLDERS[parent_name]
+            folder = parent / folder_name
+
+            if not folder.is_dir():
+                return f"Der Ordner '{folder_name}' wurde nicht gefunden."
+
+            if FileActions.open_path(folder):
+                return f"Ich öffne den Ordner '{folder_name}'."
+
+            return f"Der Ordner '{folder_name}' konnte nicht geöffnet werden."
 
         # ---------------------------------------------------------
         # DOWNLOADS
@@ -134,3 +173,21 @@ class FileManagerSkill(Skill):
             return "Der Papierkorb konnte nicht geöffnet werden."
 
         return "Dieser Datei- oder Ordnerbefehl wird noch nicht unterstützt."
+
+    def _parse_subfolder_command(self, prompt: str) -> tuple[str, str] | None:
+        match = self.SUBFOLDER_COMMAND.fullmatch(prompt.strip())
+        if match is None:
+            return None
+
+        folder_name = match.group(1).strip().strip("\"'")
+        parent_name = match.group(2).lower()
+        invalid_windows_chars = '<>:"/\\|?*'
+        if (
+            not folder_name
+            or folder_name in (".", "..")
+            or any(char in invalid_windows_chars for char in folder_name)
+            or folder_name.endswith((" ", "."))
+        ):
+            return None
+
+        return folder_name, parent_name

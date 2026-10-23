@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import platform
+import re
 import shutil
 
 from jarvis.skills.base import Skill
@@ -44,8 +45,6 @@ class SystemInfoSkill(Skill):
             "wie viel ram",
             "wie viel arbeitsspeicher",
             "arbeitsspeicher",
-            "ram",
-
             # Grafikkarte
             "welche grafikkarte",
             "meine grafikkarte",
@@ -60,7 +59,10 @@ class SystemInfoSkill(Skill):
             "festplattenspeicher",
         )
 
-        return any(keyword in prompt for keyword in keywords)
+        return any(keyword in prompt for keyword in keywords) or re.search(
+            r"\bram\b",
+            prompt,
+        ) is not None
 
     def confidence(self, prompt: str) -> float:
         if self.can_handle(prompt):

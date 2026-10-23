@@ -23,7 +23,9 @@ def test_file_open_parses_filename() -> None:
     assert skill._parse_command("Öffne die Datei urlaub.png") == "urlaub.png"
     assert skill._parse_command("Öffne test.pdf bitte") == "test.pdf"
     assert skill._parse_command("Öffne bild.png auf dem Desktop") == "bild.png"
-    assert skill._parse_command("Öffne C:\\Users\\test.pdf") is None
+    assert skill._parse_command("Öffne C:\\Users\\Fynn\\test.pdf") == (
+        "C:\\Users\\Fynn\\test.pdf"
+    )
 
 
 def test_file_open_parses_optional_folder() -> None:
@@ -69,3 +71,27 @@ def test_file_open_does_not_fallback_to_other_folders_when_folder_is_named() -> 
         )
 
     find_source.assert_called_once_with("bild.png", Path.home() / "Desktop")
+
+
+@patch("jarvis.skills.file_open.FileActions.open_path", return_value=True)
+def test_file_open_opens_file_by_absolute_path(mock_open, tmp_path: Path) -> None:
+    file_path = tmp_path / "Projects" / "Bericht.pdf"
+    file_path.parent.mkdir()
+    file_path.write_text("PDF placeholder", encoding="utf-8")
+    skill = FileOpenSkill()
+
+    with patch.object(skill, "_find_source") as find_source:
+        assert skill.can_handle(f"Öffne die Datei {file_path}")
+        assert skill.execute(f"Öffne die Datei {file_path}") == (
+            "Ich öffne 'Bericht.pdf'."
+        )
+
+    mock_open.assert_called_once_with(file_path)
+    find_source.assert_not_called()
+
+
+def test_file_open_reports_missing_absolute_path(tmp_path: Path) -> None:
+    file_path = tmp_path / "missing.pdf"
+    assert FileOpenSkill().execute(f"Öffne die Datei {file_path}") == (
+        f"Ich konnte '{file_path}' nicht finden."
+    )

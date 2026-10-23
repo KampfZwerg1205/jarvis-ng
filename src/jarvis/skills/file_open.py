@@ -54,7 +54,10 @@ class FileOpenSkill(Skill):
 
         filename, folder_name = details
 
-        if folder_name is None:
+        file_path = Path(filename).expanduser()
+        if file_path.is_absolute():
+            source = file_path if file_path.is_file() else None
+        elif folder_name is None:
             source = self._find_source(filename)
         else:
             source = self._find_source(filename, Path.home() / self.FOLDERS[folder_name])
@@ -70,10 +73,11 @@ class FileOpenSkill(Skill):
         return details[0] if details is not None else None
 
     def _parse_command_details(self, prompt: str) -> tuple[str, str | None] | None:
-        text = prompt.lower().strip()
+        text = prompt.strip()
+        lowered = text.lower()
         commands = ("öffne die datei ", "oeffne die datei ", "öffne ", "oeffne ", "mach auf ", "mach ")
         for command in commands:
-            if text.startswith(command):
+            if lowered.startswith(command):
                 text = text[len(command):]
                 break
         else:
@@ -81,24 +85,32 @@ class FileOpenSkill(Skill):
 
         folder_name = None
         for suffix, name in self.FOLDER_SUFFIXES:
-            if text.endswith(suffix):
+            if text.lower().endswith(suffix):
                 text = text[:-len(suffix)]
                 folder_name = name
                 break
 
         for prefix in ("die datei ", "datei ", "die ", "den ", "das ", "bitte "):
-            if text.startswith(prefix):
+            if text.lower().startswith(prefix):
                 text = text[len(prefix):]
                 break
         text = text.strip(" .,!?\"'")
-        if text.endswith(" bitte"):
+        if text.lower().endswith(" bitte"):
             text = text[:-6].strip()
+
+        file_path = Path(text).expanduser()
+        if file_path.is_absolute():
+            if folder_name is not None:
+                return None
+            return str(file_path), None
+
+        lowered = text.lower()
         if (
             not text
             or Path(text).name != text
-            or text in self.FOLDERS
-            or text.startswith("ordner ")
-            or text in ("papierkorb", "mülleimer")
+            or lowered in self.FOLDERS
+            or lowered.startswith("ordner ")
+            or lowered in ("papierkorb", "mülleimer")
         ):
             return None
         return text, folder_name

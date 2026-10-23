@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from jarvis.skills.base import Skill
+from jarvis.system.folder_search import find_paths_by_name, local_search_roots
 
 
 class FileSearchSkill(Skill):
-    """Sucht Dateien und Ordner in bekannten Windows-Ordnern."""
+    """Sucht Dateien und Ordner auf dem PC oder in bekannten Ordnern."""
 
     MAX_RESULTS = 10
 
@@ -37,10 +39,27 @@ class FileSearchSkill(Skill):
             "musik",
         )
 
-        return (
-            any(prompt.startswith(command) for command in commands)
-            and any(folder in prompt for folder in folders)
+        if not any(prompt.startswith(command) for command in commands):
+            return False
+
+        search_name = self._extract_search_name(prompt)
+        if not search_name or prompt.startswith("finde heraus "):
+            return False
+
+        global_locations = (
+            " auf meinem pc",
+            " auf dem pc",
+            " auf meinem computer",
+            " auf dem computer",
+            " auf allen laufwerken",
         )
+        has_file_hint = (
+            any(folder in prompt for folder in folders)
+            or any(location in prompt for location in global_locations)
+            or "datei" in prompt
+            or re.search(r"\.[a-z0-9]{1,10}$", search_name) is not None
+        )
+        return has_file_hint
 
     def confidence(self, prompt: str) -> float:
         if self.can_handle(prompt):
@@ -52,11 +71,7 @@ class FileSearchSkill(Skill):
         prompt = prompt.lower().strip()
 
         folder = self._find_folder(prompt)
-
-        if folder is None:
-            return "Diesen Ordner kann ich momentan nicht durchsuchen."
-
-        if not folder.exists():
+        if folder is not None and not folder.exists():
             return f"Der Ordner {folder.name} wurde nicht gefunden."
 
         search_name = self._extract_search_name(prompt)
@@ -64,32 +79,26 @@ class FileSearchSkill(Skill):
         if not search_name:
             return "Ich konnte keinen Dateinamen erkennen."
 
-        try:
-            matches = self._search(folder, search_name)
-        except OSError:
-            return "Auf diesen Ordner konnte nicht zugegriffen werden."
+        roots = (folder,) if folder is not None else self._search_roots()
+        matches = self._search(roots, search_name)
 
         if not matches:
-            return (
-                f"Ich konnte '{search_name}' "
-                f"in {folder.name} nicht finden."
-            )
+            if folder is None:
+                return f"Ich konnte '{search_name}' auf deinem PC nicht finden."
+            return f"Ich konnte '{search_name}' in {folder.name} nicht finden."
 
         visible_matches = matches[:self.MAX_RESULTS]
 
-        result_names = [
-            str(match.relative_to(folder))
-            for match in visible_matches
-        ]
-
-        response = (
-            f"Ich habe {len(matches)} Treffer in "
-            f"{folder.name} gefunden:\n"
-            + "\n".join(
-                f"- {name}"
-                for name in result_names
+        if folder is None:
+            result_names = [str(match) for match in visible_matches]
+            response = (
+                f"Ich habe {len(matches)} Treffer auf deinem PC gefunden:\n"
             )
-        )
+        else:
+            result_names = [str(match.relative_to(folder)) for match in visible_matches]
+            response = f"Ich habe {len(matches)} Treffer in {folder.name} gefunden:\n"
+
+        response += "\n".join(f"- {name}" for name in result_names)
 
         if len(matches) > self.MAX_RESULTS:
             remaining = len(matches) - self.MAX_RESULTS
@@ -215,6 +224,15 @@ class FileSearchSkill(Skill):
                 "",
             )
 
+        for location in (
+            " auf meinem pc",
+            " auf dem pc",
+            " auf meinem computer",
+            " auf dem computer",
+            " auf allen laufwerken",
+        ):
+            text = text.replace(location, "")
+
         # ---------------------------------------------------------
         # FRAGEZEICHEN UND SATZZEICHEN ENTFERNEN
         # ---------------------------------------------------------
@@ -252,18 +270,10 @@ class FileSearchSkill(Skill):
 
     def _search(
         self,
-        folder: Path,
+        roots: tuple[Path, ...],
         search_name: str,
     ) -> list[Path]:
-        search_name = search_name.lower().strip()
+        return find_paths_by_name(search_name, roots, max_results=100)
 
-        matches: list[Path] = []
-
-        for path in folder.rglob("*"):
-            if search_name in path.name.lower():
-                matches.append(path)
-
-                if len(matches) >= 100:
-                    break
-
-        return matches
+    def _search_roots(self) -> tuple[Path, ...]:
+        return local_search_roots()

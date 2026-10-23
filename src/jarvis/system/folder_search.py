@@ -50,3 +50,28 @@ def find_folders_by_name(
                         return matches
 
     return matches
+
+
+def find_paths_by_name(
+    search_name: str,
+    roots: tuple[Path, ...],
+    max_results: int = 100,
+) -> list[Path]:
+    """Sucht Dateien und Ordner anhand eines Namensfragments."""
+
+    matches: list[Path] = []
+    search_name = search_name.casefold().strip()
+    for root in roots:
+        for current, directories, files in os.walk(root, onerror=lambda _error: None):
+            directories[:] = [
+                name
+                for name in directories
+                if not os.path.islink(os.path.join(current, name))
+            ]
+            for name in (*directories, *files):
+                if search_name in name.casefold():
+                    matches.append(Path(current) / name)
+                    if len(matches) >= max_results:
+                        return matches
+
+    return matches

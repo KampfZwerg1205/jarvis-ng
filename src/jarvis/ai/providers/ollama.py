@@ -17,8 +17,9 @@ class OllamaProvider(AIProvider):
         response = requests.post(
             f"{settings.ollama_host}/api/generate",
             json={
-                "model": "llama3.2",
+                "model": settings.ollama_model,
                 "prompt": prompt,
+                "system": settings.system_prompt,
                 "stream": False,
             },
             timeout=120,

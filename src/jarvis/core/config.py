@@ -2,7 +2,6 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 BASE_DIR = Path(__file__).resolve().parents[3]
 
 
@@ -13,22 +12,23 @@ class Settings(BaseSettings):
 
     debug: bool = True
 
-    ai_provider: str = "gemini"
+    ai_provider: str = "ollama"
     gemini_api_key: str = ""
     ollama_host: str = "http://localhost:11434"
+    ollama_model: str = "llama3.2"
     openai_api_key: str = ""
 
     system_prompt: str = (
-    "Du bist JARVIS-NG, ein intelligenter, höflicher und präziser KI-Assistent. "
-    "Antworte auf Deutsch, sofern der Nutzer keine andere Sprache verwendet."
-)
+        "Du bist JARVIS-NG, ein intelligenter, höflicher und präziser KI-Assistent. "
+        "Antworte auf Deutsch, sofern der Nutzer keine andere Sprache verwendet."
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         env_prefix="JARVIS_",
         extra="ignore",
-    )  
+    )
 
 
 settings = Settings()

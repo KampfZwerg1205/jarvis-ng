@@ -1,12 +1,24 @@
 from rich.console import Console
 
-from jarvis.ai.providers import OllamaProvider
-from jarvis.ai.providers import GeminiProvider
+from jarvis.ai.providers import GeminiProvider, OllamaProvider
 from jarvis.ai.router import AIRouter
 from jarvis.cli.app import app
 from jarvis.conversation.manager import ConversationManager
+from jarvis.core.config import settings
 
 console = Console()
+
+
+def create_ai_router() -> AIRouter:
+    """Erstellt einen Router, der standardmäßig lokal über Ollama arbeitet."""
+
+    router = AIRouter()
+    router.register(OllamaProvider())
+
+    if settings.ai_provider == "gemini" and settings.gemini_api_key:
+        router.register(GeminiProvider())
+
+    return router
 
 
 @app.command()
@@ -22,11 +34,7 @@ def chat() -> None:
         "[dim]Befehle: /clear, /history, /exit[/dim]\n"
     )
 
-    router = AIRouter()
-    router.register(GeminiProvider())
-    router.register(OllamaProvider())
-
-    conversation = ConversationManager(router)
+    conversation = ConversationManager(create_ai_router())
 
     while True:
         prompt = input("Du: ")

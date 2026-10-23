@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from jarvis.ai.router import AIRouter
 from jarvis.conversation.history import ConversationHistory
 from jarvis.skills.router import SkillRouter
@@ -26,6 +28,7 @@ class ConversationManager:
         # Wartet auf eine Bestätigung für eine gefährliche Aktion.
         self.pending_action: str | None = None
         self.pending_file: str | None = None
+        self.pending_destination: str | None = None
 
     def chat(self, prompt: str) -> str:
         prompt = prompt.strip()
@@ -129,6 +132,61 @@ class ConversationManager:
                 self.history.add_assistant(answer)
                 return answer
 
+            # -----------------------------------------------------
+            # Datei verschieben
+            # -----------------------------------------------------
+
+            if (
+                skill.name == "file_operations"
+                and prompt.lower().startswith(("verschiebe ", "verschieb "))
+            ):
+                source_name, destination_folder = skill._parse_command(prompt)
+
+                if source_name is None or destination_folder is None:
+                    answer = skill.execute(prompt)
+                    self.history.add_assistant(answer)
+                    return answer
+
+                source = skill._find_source(source_name)
+                if source is None:
+                    answer = f"Ich konnte '{source_name}' nicht finden."
+                    self.history.add_assistant(answer)
+                    return answer
+
+                if not destination_folder.is_dir():
+                    answer = (
+                        f"Der Zielordner '{destination_folder}' wurde nicht gefunden."
+                    )
+                    self.history.add_assistant(answer)
+                    return answer
+
+                destination = destination_folder / source.name
+                try:
+                    if source.resolve() == destination.resolve():
+                        answer = "Quelle und Ziel sind identisch."
+                        self.history.add_assistant(answer)
+                        return answer
+                except OSError:
+                    answer = "Quelle und Ziel konnten nicht geprüft werden."
+                    self.history.add_assistant(answer)
+                    return answer
+
+                if destination.exists():
+                    answer = f"'{destination.name}' existiert im Zielordner bereits."
+                    self.history.add_assistant(answer)
+                    return answer
+
+                self.pending_action = "move_file"
+                self.pending_file = str(source)
+                self.pending_destination = str(destination)
+
+                answer = (
+                    f"Sir, soll ich '{source.name}' wirklich nach "
+                    f"'{destination_folder}' verschieben? (Ja/Nein)"
+                )
+                self.history.add_assistant(answer)
+                return answer
+
             answer = skill.execute(prompt)
 
             self.history.add_assistant(answer)
@@ -175,6 +233,7 @@ class ConversationManager:
         if answer in no_words:
             self.pending_action = None
             self.pending_file = None
+            self.pending_destination = None
 
             return "Verstanden. Der Vorgang wurde abgebrochen."
 
@@ -185,9 +244,11 @@ class ConversationManager:
         if answer in yes_words:
             action = self.pending_action
             file_path = self.pending_file
+            destination_path = self.pending_destination
 
             self.pending_action = None
             self.pending_file = None
+            self.pending_destination = None
 
             # -----------------------------------------------------
             # Datei löschen
@@ -201,6 +262,23 @@ class ConversationManager:
                     return "Die Datei wurde gelöscht."
 
                 return "Die Datei konnte nicht gelöscht werden."
+
+            # -----------------------------------------------------
+            # Datei verschieben
+            # -----------------------------------------------------
+
+            if action == "move_file":
+                if file_path is None or destination_path is None:
+                    return "Quelle oder Ziel der Datei konnte nicht ermittelt werden."
+
+                destination = Path(destination_path)
+                if destination.exists():
+                    return f"'{destination.name}' existiert im Zielordner bereits."
+
+                if FileActions.move_file(file_path, destination_path):
+                    return "Die Datei wurde verschoben."
+
+                return "Die Datei konnte nicht verschoben werden."
 
             # -----------------------------------------------------
             # Herunterfahren

@@ -1,6 +1,8 @@
 from pathlib import Path
 from unittest.mock import patch
 
+from jarvis.ai.router import AIRouter
+from jarvis.conversation.manager import ConversationManager
 from jarvis.skills.file_operations import FileOperationsSkill
 
 
@@ -100,3 +102,67 @@ def test_file_operations_does_not_overwrite_existing_destination(
 
     assert "existiert im Zielordner bereits" in result
     copy_file.assert_not_called()
+
+
+@patch("jarvis.conversation.manager.FileActions.move_file", return_value=True)
+def test_conversation_confirms_move_before_moving_file(
+    move_file,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "Source Folder" / "Report.pdf"
+    destination_folder = tmp_path / "Archive"
+    source.parent.mkdir()
+    destination_folder.mkdir()
+    source.write_text("report", encoding="utf-8")
+    manager = ConversationManager(AIRouter())
+
+    response = manager.chat(f"Verschiebe {source} nach {destination_folder}")
+
+    assert "wirklich" in response
+    assert "verschieben?" in response
+    move_file.assert_not_called()
+
+    result = manager.chat("Ja")
+
+    assert result == "Die Datei wurde verschoben."
+    move_file.assert_called_once_with(
+        str(source), str(destination_folder / source.name)
+    )
+
+
+@patch("jarvis.conversation.manager.FileActions.move_file")
+def test_conversation_can_cancel_move(move_file, tmp_path: Path) -> None:
+    source = tmp_path / "Report.pdf"
+    destination_folder = tmp_path / "Archive"
+    source.write_text("report", encoding="utf-8")
+    destination_folder.mkdir()
+    manager = ConversationManager(AIRouter())
+
+    manager.chat(f"Verschiebe {source} nach {destination_folder}")
+    result = manager.chat("Nein")
+
+    assert result == "Verstanden. Der Vorgang wurde abgebrochen."
+    assert manager.pending_action is None
+    assert manager.pending_file is None
+    assert manager.pending_destination is None
+    move_file.assert_not_called()
+
+
+@patch("jarvis.conversation.manager.FileActions.move_file")
+def test_conversation_does_not_overwrite_existing_file_on_move(
+    move_file,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "Source" / "Report.pdf"
+    destination_folder = tmp_path / "Archive"
+    source.parent.mkdir()
+    destination_folder.mkdir()
+    source.write_text("source", encoding="utf-8")
+    (destination_folder / source.name).write_text("destination", encoding="utf-8")
+    manager = ConversationManager(AIRouter())
+
+    result = manager.chat(f"Verschiebe {source} nach {destination_folder}")
+
+    assert "existiert im Zielordner bereits" in result
+    assert manager.pending_action is None
+    move_file.assert_not_called()

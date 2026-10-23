@@ -67,6 +67,21 @@ def test_file_info_finds_folder_without_named_parent(tmp_path: Path) -> None:
     assert "Dateien: notiz.txt." in response
 
 
+def test_file_info_lists_contents_by_absolute_path(tmp_path: Path) -> None:
+    folder = tmp_path / "My Folder"
+    folder.mkdir()
+    (folder / "notiz.txt").write_text("Text", encoding="utf-8")
+    skill = FileInfoSkill()
+
+    with patch.object(skill, "_find_matching_folders") as find_folders:
+        response = skill.execute(f"Was ist im Ordner {folder}")
+
+    assert skill.can_handle(f"Was ist im Ordner {folder}")
+    assert "In My Folder befinden sich 1 Dateien und 0 Ordner." in response
+    assert "Dateien: notiz.txt." in response
+    find_folders.assert_not_called()
+
+
 def test_file_info_asks_for_location_if_folder_name_is_ambiguous(
     tmp_path: Path,
 ) -> None:

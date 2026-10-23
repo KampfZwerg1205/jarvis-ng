@@ -56,6 +56,22 @@ def test_file_manager_opens_folder_found_anywhere(tmp_path: Path) -> None:
     open_path.assert_called_once_with(folder)
 
 
+def test_file_manager_opens_folder_by_absolute_path(tmp_path: Path) -> None:
+    folder = tmp_path / "My Folder"
+    folder.mkdir()
+    skill = FileManagerSkill()
+
+    with patch(
+        "jarvis.skills.file_manager.FileActions.open_path",
+        return_value=True,
+    ) as open_path:
+        result = skill.execute(f"Öffne den Ordner {folder}")
+
+    assert skill.can_handle(f"Öffne den Ordner {folder}")
+    assert result == "Ich öffne den Ordner 'My Folder'."
+    open_path.assert_called_once_with(folder)
+
+
 def test_file_manager_asks_for_location_when_folder_name_is_ambiguous(
     tmp_path: Path,
 ) -> None:

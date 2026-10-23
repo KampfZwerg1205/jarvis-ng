@@ -88,12 +88,16 @@ class FileManagerSkill(Skill):
         return 0.0
 
     def execute(self, prompt: str) -> str:
-        prompt = prompt.lower().strip()
+        raw_prompt = prompt.strip()
+        prompt = raw_prompt.lower()
 
-        subfolder = self._parse_subfolder_command(prompt)
+        subfolder = self._parse_subfolder_command(raw_prompt)
         if subfolder is not None:
             folder_name, parent_name = subfolder
-            if parent_name is not None:
+            folder_path = Path(folder_name).expanduser()
+            if folder_path.is_absolute():
+                matches = [folder_path]
+            elif parent_name is not None:
                 parent = Path.home() / self.USER_FOLDERS[parent_name]
                 matches = [parent / folder_name]
             elif folder_name in self.USER_FOLDERS:
@@ -110,10 +114,15 @@ class FileManagerSkill(Skill):
             if not folder.is_dir():
                 return f"Der Ordner '{folder_name}' wurde nicht gefunden."
 
+            display_name = (
+                folder.name
+                if Path(folder_name).is_absolute()
+                else folder_name
+            )
             if FileActions.open_path(folder):
-                return f"Ich öffne den Ordner '{folder_name}'."
+                return f"Ich öffne den Ordner '{display_name}'."
 
-            return f"Der Ordner '{folder_name}' konnte nicht geöffnet werden."
+            return f"Der Ordner '{display_name}' konnte nicht geöffnet werden."
 
         # ---------------------------------------------------------
         # DOWNLOADS
@@ -194,6 +203,12 @@ class FileManagerSkill(Skill):
 
         folder_name = match.group(1).strip().strip("\"'")
         parent_name = match.group(2)
+        folder_path = Path(folder_name).expanduser()
+        if folder_path.is_absolute():
+            if parent_name is not None:
+                return None
+            return str(folder_path), None
+
         invalid_windows_chars = '<>:"/\\|?*'
         if (
             not folder_name

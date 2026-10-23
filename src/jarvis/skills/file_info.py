@@ -77,14 +77,18 @@ class FileInfoSkill(Skill):
         return 0.0
 
     def execute(self, prompt: str) -> str:
-        prompt = prompt.lower().strip()
+        raw_prompt = prompt.strip()
+        prompt = raw_prompt.lower()
 
-        subfolder = self._parse_subfolder_query(prompt)
+        subfolder = self._parse_subfolder_query(raw_prompt)
         if subfolder is None:
             folder = self._find_folder(prompt)
         else:
             folder_name, parent_name = subfolder
-            if parent_name is not None:
+            folder_path = Path(folder_name).expanduser()
+            if folder_path.is_absolute():
+                folder = folder_path
+            elif parent_name is not None:
                 folder = Path.home() / self.USER_FOLDERS[parent_name] / folder_name
             else:
                 matches = self._find_matching_folders(folder_name)
@@ -160,6 +164,12 @@ class FileInfoSkill(Skill):
 
         folder_name = match.group(1).strip().strip("\"'")
         parent_name = match.group(2)
+        folder_path = Path(folder_name).expanduser()
+        if folder_path.is_absolute():
+            if parent_name is not None:
+                return None
+            return str(folder_path), None
+
         invalid_windows_chars = '<>:"/\\|?*'
         if (
             not folder_name

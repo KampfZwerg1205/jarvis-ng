@@ -54,7 +54,8 @@ class FileDeleteSkill(Skill):
     def _parse_command(self, prompt: str) -> str | None:
         """Extrahiert den Dateinamen aus dem Löschbefehl."""
 
-        text = prompt.lower().strip()
+        text = prompt.strip()
+        lowered = text.lower()
 
         commands = (
             "lösche ",
@@ -65,22 +66,27 @@ class FileDeleteSkill(Skill):
         )
 
         for command in commands:
-            if text.startswith(command):
+            if lowered.startswith(command):
                 text = text[len(command):]
+                lowered = text.lower()
                 break
         else:
             return None
 
-        text = text.strip(" .,!?")
+        text = text.strip(" .,!?\"'")
 
-        if text.endswith(" bitte"):
+        if text.lower().endswith(" bitte"):
             text = text[:-6].strip()
 
         if not text:
             return None
 
-        # Ein Pfad darf hier nicht angegeben werden.
-        # JARVIS sucht ausschließlich in den bekannten Benutzerordnern.
+        file_path = Path(text).expanduser()
+        if file_path.is_absolute():
+            return str(file_path)
+
+        # Relative Pfade werden nicht angenommen. Dateien ohne Pfad sucht
+        # JARVIS weiterhin nur in den bekannten Benutzerordnern.
         if Path(text).name != text:
             return None
 
@@ -88,6 +94,10 @@ class FileDeleteSkill(Skill):
 
     def _find_source(self, filename: str) -> Path | None:
         """Sucht die Datei in bekannten Benutzerordnern."""
+
+        source_path = Path(filename).expanduser()
+        if source_path.is_absolute():
+            return source_path if source_path.is_file() else None
 
         home = Path.home()
 

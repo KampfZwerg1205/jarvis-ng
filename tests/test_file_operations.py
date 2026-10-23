@@ -4,6 +4,7 @@ from unittest.mock import patch
 from jarvis.ai.router import AIRouter
 from jarvis.conversation.manager import ConversationManager
 from jarvis.skills.file_operations import FileOperationsSkill
+from jarvis.system.file_actions import FileActions
 
 
 def test_file_operations_detects_copy() -> None:
@@ -102,6 +103,32 @@ def test_file_operations_does_not_overwrite_existing_destination(
 
     assert "existiert im Zielordner bereits" in result
     copy_file.assert_not_called()
+
+
+def test_file_actions_copy_does_not_overwrite_existing_destination(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source.txt"
+    destination = tmp_path / "destination.txt"
+    source.write_text("new content", encoding="utf-8")
+    destination.write_text("keep this", encoding="utf-8")
+
+    assert not FileActions.copy_file(source, destination)
+    assert source.read_text(encoding="utf-8") == "new content"
+    assert destination.read_text(encoding="utf-8") == "keep this"
+
+
+def test_file_actions_move_does_not_overwrite_existing_destination(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source.txt"
+    destination = tmp_path / "destination.txt"
+    source.write_text("new content", encoding="utf-8")
+    destination.write_text("keep this", encoding="utf-8")
+
+    assert not FileActions.move_file(source, destination)
+    assert source.read_text(encoding="utf-8") == "new content"
+    assert destination.read_text(encoding="utf-8") == "keep this"
 
 
 @patch("jarvis.conversation.manager.FileActions.move_file", return_value=True)

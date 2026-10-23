@@ -101,6 +101,9 @@ class FileActions:
             if not source_path.is_file():
                 return False
 
+            if destination_path.exists():
+                return False
+
             destination_path.parent.mkdir(
                 parents=True,
                 exist_ok=True,
@@ -131,6 +134,9 @@ class FileActions:
                 return False
 
             if not source_path.is_file():
+                return False
+
+            if destination_path.exists():
                 return False
 
             destination_path.parent.mkdir(

@@ -14,28 +14,8 @@ class FileOperationsSkill(Skill):
         return "file_operations"
 
     def can_handle(self, prompt: str) -> bool:
-        prompt = prompt.lower().strip()
-
-        commands = (
-            "kopiere ",
-            "kopier ",
-            "verschiebe ",
-            "verschieb ",
-        )
-
-        folders = (
-            "downloads",
-            "dokumente",
-            "desktop",
-            "bilder",
-            "videos",
-            "musik",
-        )
-
-        return (
-            any(prompt.startswith(command) for command in commands)
-            and any(folder in prompt for folder in folders)
-        )
+        source, destination = self._parse_command(prompt)
+        return source is not None and destination is not None
 
     def confidence(self, prompt: str) -> float:
         if self.can_handle(prompt):
@@ -44,9 +24,10 @@ class FileOperationsSkill(Skill):
         return 0.0
 
     def execute(self, prompt: str) -> str:
-        prompt = prompt.lower().strip()
+        raw_prompt = prompt.strip()
+        prompt = raw_prompt.lower()
 
-        source_name, destination_folder = self._parse_command(prompt)
+        source_name, destination_folder = self._parse_command(raw_prompt)
 
         if source_name is None:
             return "Ich konnte die Quelldatei nicht erkennen."
@@ -59,6 +40,9 @@ class FileOperationsSkill(Skill):
         if source is None:
             return f"Ich konnte '{source_name}' nicht finden."
 
+        if not destination_folder.is_dir():
+            return f"Der Zielordner '{destination_folder}' wurde nicht gefunden."
+
         destination = destination_folder / source.name
 
         try:
@@ -67,6 +51,9 @@ class FileOperationsSkill(Skill):
 
         except OSError:
             return "Quelle und Ziel konnten nicht geprüft werden."
+
+        if destination.exists():
+            return f"'{destination.name}' existiert im Zielordner bereits."
 
         if prompt.startswith(("kopiere ", "kopier ")):
             if FileActions.copy_file(source, destination):
@@ -92,8 +79,8 @@ class FileOperationsSkill(Skill):
         self,
         prompt: str,
     ) -> tuple[str | None, Path | None]:
-        # Für die Verarbeitung wird alles vereinheitlicht.
-        text = prompt.lower().strip()
+        text = prompt.strip()
+        lowered = text.lower()
 
         commands = (
             "kopiere ",
@@ -103,9 +90,12 @@ class FileOperationsSkill(Skill):
         )
 
         for command in commands:
-            if text.startswith(command):
+            if lowered.startswith(command):
                 text = text[len(command):]
+                lowered = text.lower()
                 break
+        else:
+            return None, None
 
         folders = {
             "downloads": Path.home() / "Downloads",
@@ -129,17 +119,32 @@ class FileOperationsSkill(Skill):
             )
 
             for marker in markers:
-                if marker in text:
+                position = lowered.rfind(marker)
+                if position >= 0:
                     destination_path = path
-                    text = text.replace(marker, "")
+                    text = text[:position]
                     break
 
             if destination_path is not None:
                 break
 
-        text = text.strip(" .,!?")
+        if destination_path is None:
+            for marker in (" nach ", " in ", " auf "):
+                position = lowered.rfind(marker)
+                if position < 0:
+                    continue
+                candidate_text = text[position + len(marker):].strip(
+                    " .,!?\"'"
+                )
+                candidate_path = Path(candidate_text).expanduser()
+                if candidate_path.is_absolute():
+                    destination_path = candidate_path
+                    text = text[:position]
+                    break
 
-        if text.endswith(" bitte"):
+        text = text.strip(" .,!?\"'")
+
+        if text.lower().endswith(" bitte"):
             text = text[:-6].strip()
 
         if not text:
@@ -149,6 +154,10 @@ class FileOperationsSkill(Skill):
 
     def _find_source(self, source_name: str) -> Path | None:
         """Sucht die Quelldatei in bekannten Benutzerordnern."""
+
+        source_path = Path(source_name).expanduser()
+        if source_path.is_absolute():
+            return source_path if source_path.is_file() else None
 
         home = Path.home()
 

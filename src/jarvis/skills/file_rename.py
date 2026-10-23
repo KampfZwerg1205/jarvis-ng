@@ -60,7 +60,8 @@ class FileRenameSkill(Skill):
         self,
         prompt: str,
     ) -> tuple[str | None, str | None]:
-        text = prompt.lower().strip()
+        text = prompt.strip()
+        lowered = text.lower()
 
         commands = (
             "benenne ",
@@ -70,8 +71,9 @@ class FileRenameSkill(Skill):
         )
 
         for command in commands:
-            if text.startswith(command):
+            if lowered.startswith(command):
                 text = text[len(command):]
+                lowered = text.lower()
                 break
 
         # "Benenne test.txt um in neuer.txt"
@@ -87,21 +89,20 @@ class FileRenameSkill(Skill):
         new_name = None
 
         for marker in markers:
-            if marker in text:
-                parts = text.split(marker, 1)
-
-                source_name = parts[0].strip()
-                new_name = parts[1].strip()
+            position = lowered.find(marker)
+            if position >= 0:
+                source_name = text[:position].strip()
+                new_name = text[position + len(marker):].strip()
 
                 break
 
         if source_name is None or new_name is None:
             return None, None
 
-        source_name = source_name.strip(" .,!?")
-        new_name = new_name.strip(" .,!?")
+        source_name = source_name.strip(" .,!?\"'")
+        new_name = new_name.strip(" .,!?\"'")
 
-        if new_name.endswith(" bitte"):
+        if new_name.lower().endswith(" bitte"):
             new_name = new_name[:-6].strip()
 
         if not source_name or not new_name:
@@ -111,6 +112,10 @@ class FileRenameSkill(Skill):
 
     def _find_source(self, source_name: str) -> Path | None:
         """Sucht die Quelldatei in bekannten Benutzerordnern."""
+
+        source_path = Path(source_name).expanduser()
+        if source_path.is_absolute():
+            return source_path if source_path.is_file() else None
 
         home = Path.home()
 

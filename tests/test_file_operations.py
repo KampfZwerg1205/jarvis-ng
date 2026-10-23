@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import patch
 
 from jarvis.skills.file_operations import FileOperationsSkill
 
@@ -47,3 +48,55 @@ def test_file_operations_parses_move_command() -> None:
 
     assert source == "bild.png"
     assert destination == Path.home() / "Pictures"
+
+
+def test_file_operations_parses_absolute_source_and_destination(
+    tmp_path: Path,
+) -> None:
+    source_path = tmp_path / "Source Files" / "Report.pdf"
+    destination_path = tmp_path / "Archive Folder"
+    skill = FileOperationsSkill()
+
+    source, destination = skill._parse_command(
+        f"Kopiere {source_path} nach {destination_path}"
+    )
+
+    assert source == str(source_path)
+    assert destination == destination_path
+    assert skill.can_handle(f"Kopiere {source_path} nach {destination_path}")
+
+
+@patch("jarvis.skills.file_operations.FileActions.copy_file", return_value=True)
+def test_file_operations_copies_absolute_source_to_absolute_destination(
+    copy_file,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "Source Files" / "Report.pdf"
+    destination_folder = tmp_path / "Archive Folder"
+    source.parent.mkdir()
+    destination_folder.mkdir()
+    source.write_text("report", encoding="utf-8")
+    skill = FileOperationsSkill()
+
+    result = skill.execute(f"Kopiere {source} nach {destination_folder}")
+
+    assert result == f"Ich habe 'Report.pdf' nach {destination_folder.name} kopiert."
+    copy_file.assert_called_once_with(source, destination_folder / source.name)
+
+
+@patch("jarvis.skills.file_operations.FileActions.copy_file")
+def test_file_operations_does_not_overwrite_existing_destination(
+    copy_file,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source.txt"
+    destination_folder = tmp_path / "Archive"
+    source.write_text("new", encoding="utf-8")
+    destination_folder.mkdir()
+    (destination_folder / source.name).write_text("existing", encoding="utf-8")
+    skill = FileOperationsSkill()
+
+    result = skill.execute(f"Kopiere {source} nach {destination_folder}")
+
+    assert "existiert im Zielordner bereits" in result
+    copy_file.assert_not_called()

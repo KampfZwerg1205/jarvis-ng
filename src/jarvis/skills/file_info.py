@@ -1,14 +1,32 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from jarvis.skills.base import Skill
+from jarvis.system.folder_search import find_folders_by_name, local_search_roots
 
 
 class FileInfoSkill(Skill):
     """Liefert Informationen über bekannte Windows-Ordner."""
 
     MAX_ITEMS = 10
+    USER_FOLDERS = {
+        "downloads": "Downloads",
+        "dokumente": "Documents",
+        "desktop": "Desktop",
+        "bilder": "Pictures",
+        "videos": "Videos",
+        "musik": "Music",
+    }
+    SUBFOLDER_QUERY = re.compile(
+        r"^(?:was ist|was befindet sich|was liegt)\s+"
+        r"(?:im|in dem|in der|in den)\s+(?:ordner\s+)?(.+?)"
+        r"(?:\s+(?:auf dem|auf|im|in)\s+"
+        r"(desktop|downloads|dokumente|bilder|videos|musik))?"
+        r"[.!?]*$",
+        re.IGNORECASE,
+    )
 
     @property
     def name(self) -> str:
@@ -16,6 +34,9 @@ class FileInfoSkill(Skill):
 
     def can_handle(self, prompt: str) -> bool:
         prompt = prompt.lower().strip()
+
+        if "ordner" in prompt:
+            return self._parse_subfolder_query(prompt) is not None
 
         questions = (
             "was ist in",
@@ -58,7 +79,20 @@ class FileInfoSkill(Skill):
     def execute(self, prompt: str) -> str:
         prompt = prompt.lower().strip()
 
-        folder = self._find_folder(prompt)
+        subfolder = self._parse_subfolder_query(prompt)
+        if subfolder is None:
+            folder = self._find_folder(prompt)
+        else:
+            folder_name, parent_name = subfolder
+            if parent_name is not None:
+                folder = Path.home() / self.USER_FOLDERS[parent_name] / folder_name
+            else:
+                matches = self._find_matching_folders(folder_name)
+                if not matches:
+                    return f"Ich konnte keinen Ordner namens '{folder_name}' finden."
+                if len(matches) > 1:
+                    return self._format_folder_matches(folder_name, matches)
+                folder = matches[0]
 
         if folder is None:
             return "Diesen Ordner kann ich momentan nicht auswerten."
@@ -93,14 +127,14 @@ class FileInfoSkill(Skill):
         # DATEIEN AUFLISTEN
         # ---------------------------------------------------------
 
-        if self._should_list_files(prompt):
+        if subfolder is not None or self._should_list_files(prompt):
             response += self._format_file_list(files)
 
         # ---------------------------------------------------------
         # ORDNER AUFLISTEN
         # ---------------------------------------------------------
 
-        if self._should_list_directories(prompt):
+        if subfolder is not None or self._should_list_directories(prompt):
             response += self._format_directory_list(directories)
 
         return response
@@ -109,12 +143,8 @@ class FileInfoSkill(Skill):
         home = Path.home()
 
         folders = {
-            "downloads": home / "Downloads",
-            "dokumente": home / "Documents",
-            "desktop": home / "Desktop",
-            "bilder": home / "Pictures",
-            "videos": home / "Videos",
-            "musik": home / "Music",
+            name: home / path
+            for name, path in self.USER_FOLDERS.items()
         }
 
         for name, path in folders.items():
@@ -122,6 +152,41 @@ class FileInfoSkill(Skill):
                 return path
 
         return None
+
+    def _parse_subfolder_query(self, prompt: str) -> tuple[str, str | None] | None:
+        match = self.SUBFOLDER_QUERY.fullmatch(prompt.strip())
+        if match is None:
+            return None
+
+        folder_name = match.group(1).strip().strip("\"'")
+        parent_name = match.group(2)
+        invalid_windows_chars = '<>:"/\\|?*'
+        if (
+            not folder_name
+            or folder_name in (".", "..")
+            or any(char in invalid_windows_chars for char in folder_name)
+            or folder_name.endswith((" ", "."))
+        ):
+            return None
+
+        return folder_name, parent_name.lower() if parent_name else None
+
+    def _find_matching_folders(self, folder_name: str) -> list[Path]:
+        return find_folders_by_name(folder_name, self._search_roots())
+
+    def _search_roots(self) -> tuple[Path, ...]:
+        return local_search_roots()
+
+    def _format_folder_matches(self, folder_name: str, matches: list[Path]) -> str:
+        visible_matches = matches[:5]
+        result = (
+            f"Ich habe mehrere Ordner namens '{folder_name}' gefunden. "
+            "Bitte gib den gewünschten Speicherort an:\n- "
+            + "\n- ".join(str(path) for path in visible_matches)
+        )
+        if len(matches) > len(visible_matches):
+            result += "\nWeitere Treffer wurden nicht angezeigt."
+        return result
 
     def _should_list_files(self, prompt: str) -> bool:
         commands = (

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from jarvis.skills.base import Skill
 from jarvis.system.file_actions import FileActions
+from jarvis.system.folder_search import find_folders_by_name, local_search_roots
 
 
 class FileManagerSkill(Skill):
@@ -21,9 +22,10 @@ class FileManagerSkill(Skill):
 
     SUBFOLDER_COMMAND = re.compile(
         r"^(?:öffne|oeffne|mach(?: auf)?)\s+"
-        r"(?:bitte\s+)?(?:den\s+)?ordner\s+(.+?)\s+"
-        r"(?:auf dem|auf|im|in)\s+"
-        r"(desktop|downloads|dokumente|bilder|videos|musik)[.!?]*$",
+        r"(?:bitte\s+)?(?:den\s+)?ordner\s+(.+?)"
+        r"(?:\s+(?:auf dem|auf|im|in)\s+"
+        r"(desktop|downloads|dokumente|bilder|videos|musik))?"
+        r"[.!?]*$",
         re.IGNORECASE,
     )
 
@@ -91,8 +93,19 @@ class FileManagerSkill(Skill):
         subfolder = self._parse_subfolder_command(prompt)
         if subfolder is not None:
             folder_name, parent_name = subfolder
-            parent = Path.home() / self.USER_FOLDERS[parent_name]
-            folder = parent / folder_name
+            if parent_name is not None:
+                parent = Path.home() / self.USER_FOLDERS[parent_name]
+                matches = [parent / folder_name]
+            elif folder_name in self.USER_FOLDERS:
+                matches = [Path.home() / self.USER_FOLDERS[folder_name]]
+            else:
+                matches = self._find_matching_folders(folder_name)
+
+            if not matches:
+                return f"Ich konnte keinen Ordner namens '{folder_name}' finden."
+            if len(matches) > 1:
+                return self._format_folder_matches(folder_name, matches)
+            folder = matches[0]
 
             if not folder.is_dir():
                 return f"Der Ordner '{folder_name}' wurde nicht gefunden."
@@ -174,13 +187,13 @@ class FileManagerSkill(Skill):
 
         return "Dieser Datei- oder Ordnerbefehl wird noch nicht unterstützt."
 
-    def _parse_subfolder_command(self, prompt: str) -> tuple[str, str] | None:
+    def _parse_subfolder_command(self, prompt: str) -> tuple[str, str | None] | None:
         match = self.SUBFOLDER_COMMAND.fullmatch(prompt.strip())
         if match is None:
             return None
 
         folder_name = match.group(1).strip().strip("\"'")
-        parent_name = match.group(2).lower()
+        parent_name = match.group(2)
         invalid_windows_chars = '<>:"/\\|?*'
         if (
             not folder_name
@@ -190,4 +203,18 @@ class FileManagerSkill(Skill):
         ):
             return None
 
-        return folder_name, parent_name
+        return folder_name, parent_name.lower() if parent_name else None
+
+    def _find_matching_folders(self, folder_name: str) -> list[Path]:
+        return find_folders_by_name(folder_name, local_search_roots())
+
+    def _format_folder_matches(self, folder_name: str, matches: list[Path]) -> str:
+        visible_matches = matches[:5]
+        response = (
+            f"Ich habe mehrere Ordner namens '{folder_name}' gefunden. "
+            "Bitte gib den gewünschten Speicherort an:\n- "
+            + "\n- ".join(str(path) for path in visible_matches)
+        )
+        if len(matches) > len(visible_matches):
+            response += "\nWeitere Treffer wurden nicht angezeigt."
+        return response

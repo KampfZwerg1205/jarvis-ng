@@ -88,6 +88,8 @@ class FileActions:
     def copy_file(
         source: str | Path,
         destination: str | Path,
+        *,
+        overwrite: bool = False,
     ) -> bool:
         """Kopiert eine Datei an ein Ziel."""
 
@@ -101,7 +103,10 @@ class FileActions:
             if not source_path.is_file():
                 return False
 
-            if destination_path.exists():
+            if source_path.resolve() == destination_path.resolve():
+                return False
+
+            if destination_path.exists() and not overwrite:
                 return False
 
             destination_path.parent.mkdir(
@@ -123,6 +128,8 @@ class FileActions:
     def move_file(
         source: str | Path,
         destination: str | Path,
+        *,
+        overwrite: bool = False,
     ) -> bool:
         """Verschiebt eine Datei an ein Ziel."""
 
@@ -136,7 +143,10 @@ class FileActions:
             if not source_path.is_file():
                 return False
 
-            if destination_path.exists():
+            if source_path.resolve() == destination_path.resolve():
+                return False
+
+            if destination_path.exists() and not overwrite:
                 return False
 
             destination_path.parent.mkdir(

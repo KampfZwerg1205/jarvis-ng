@@ -118,6 +118,25 @@ def test_file_actions_copy_does_not_overwrite_existing_destination(
     assert destination.read_text(encoding="utf-8") == "keep this"
 
 
+def test_file_actions_copy_overwrites_existing_destination_when_requested(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source.txt"
+    destination = tmp_path / "destination.txt"
+    source.write_text("new content", encoding="utf-8")
+    destination.write_text("old content", encoding="utf-8")
+
+    assert FileActions.copy_file(source, destination, overwrite=True)
+    assert destination.read_text(encoding="utf-8") == "new content"
+
+
+def test_file_actions_rejects_copying_file_onto_itself(tmp_path: Path) -> None:
+    source = tmp_path / "source.txt"
+    source.write_text("content", encoding="utf-8")
+
+    assert not FileActions.copy_file(source, source, overwrite=True)
+
+
 def test_file_actions_move_does_not_overwrite_existing_destination(
     tmp_path: Path,
 ) -> None:
@@ -129,6 +148,26 @@ def test_file_actions_move_does_not_overwrite_existing_destination(
     assert not FileActions.move_file(source, destination)
     assert source.read_text(encoding="utf-8") == "new content"
     assert destination.read_text(encoding="utf-8") == "keep this"
+
+
+def test_file_actions_move_overwrites_existing_destination_when_requested(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source.txt"
+    destination = tmp_path / "destination.txt"
+    source.write_text("new content", encoding="utf-8")
+    destination.write_text("old content", encoding="utf-8")
+
+    assert FileActions.move_file(source, destination, overwrite=True)
+    assert not source.exists()
+    assert destination.read_text(encoding="utf-8") == "new content"
+
+
+def test_file_actions_rejects_moving_file_onto_itself(tmp_path: Path) -> None:
+    source = tmp_path / "source.txt"
+    source.write_text("content", encoding="utf-8")
+
+    assert not FileActions.move_file(source, source, overwrite=True)
 
 
 @patch("jarvis.conversation.manager.FileActions.move_file", return_value=True)
@@ -175,8 +214,8 @@ def test_conversation_can_cancel_move(move_file, tmp_path: Path) -> None:
     move_file.assert_not_called()
 
 
-@patch("jarvis.conversation.manager.FileActions.move_file")
-def test_conversation_does_not_overwrite_existing_file_on_move(
+@patch("jarvis.conversation.manager.FileActions.move_file", return_value=True)
+def test_conversation_confirms_overwrite_before_move(
     move_file,
     tmp_path: Path,
 ) -> None:
@@ -188,8 +227,42 @@ def test_conversation_does_not_overwrite_existing_file_on_move(
     (destination_folder / source.name).write_text("destination", encoding="utf-8")
     manager = ConversationManager(AIRouter())
 
-    result = manager.chat(f"Verschiebe {source} nach {destination_folder}")
+    response = manager.chat(f"Verschiebe {source} nach {destination_folder}")
 
-    assert "existiert im Zielordner bereits" in result
-    assert manager.pending_action is None
+    assert "existiert bereits" in response
+    assert "ersetzen?" in response
     move_file.assert_not_called()
+
+    result = manager.chat("Ja")
+
+    assert result == "Die Datei wurde verschoben und die Zieldatei ersetzt."
+    move_file.assert_called_once_with(
+        str(source), str(destination_folder / source.name), overwrite=True
+    )
+
+
+@patch("jarvis.conversation.manager.FileActions.copy_file", return_value=True)
+def test_conversation_confirms_overwrite_before_copy(
+    copy_file,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "Source" / "Report.pdf"
+    destination_folder = tmp_path / "Archive"
+    source.parent.mkdir()
+    destination_folder.mkdir()
+    source.write_text("source", encoding="utf-8")
+    (destination_folder / source.name).write_text("destination", encoding="utf-8")
+    manager = ConversationManager(AIRouter())
+
+    response = manager.chat(f"Kopiere {source} nach {destination_folder}")
+
+    assert "existiert bereits" in response
+    assert "ersetzen?" in response
+    copy_file.assert_not_called()
+
+    result = manager.chat("Ja")
+
+    assert result == "Die Datei wurde kopiert und die Zieldatei ersetzt."
+    copy_file.assert_called_once_with(
+        str(source), str(destination_folder / source.name), overwrite=True
+    )

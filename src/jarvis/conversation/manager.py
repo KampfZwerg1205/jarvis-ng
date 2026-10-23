@@ -178,13 +178,10 @@ class ConversationManager:
                 return answer
 
             # -----------------------------------------------------
-            # Datei verschieben
+            # Datei kopieren oder verschieben
             # -----------------------------------------------------
 
-            if (
-                skill.name == "file_operations"
-                and prompt.lower().startswith(("verschiebe ", "verschieb "))
-            ):
+            if skill.name == "file_operations":
                 source_name, destination_folder = skill._parse_command(prompt)
 
                 if source_name is None or destination_folder is None:
@@ -216,21 +213,32 @@ class ConversationManager:
                     self.history.add_assistant(answer)
                     return answer
 
+                is_move = prompt.lower().startswith(("verschiebe ", "verschieb "))
                 if destination.exists():
-                    answer = f"'{destination.name}' existiert im Zielordner bereits."
+                    self.pending_action = (
+                        "move_file_overwrite" if is_move else "copy_file_overwrite"
+                    )
+                    self.pending_file = str(source)
+                    self.pending_destination = str(destination)
+                    operation = "Verschieben" if is_move else "Kopieren"
+                    answer = (
+                        f"Sir, '{destination.name}' existiert bereits. Soll ich "
+                        f"die Zieldatei beim {operation} ersetzen? (Ja/Nein)"
+                    )
                     self.history.add_assistant(answer)
                     return answer
 
-                self.pending_action = "move_file"
-                self.pending_file = str(source)
-                self.pending_destination = str(destination)
+                if is_move:
+                    self.pending_action = "move_file"
+                    self.pending_file = str(source)
+                    self.pending_destination = str(destination)
 
-                answer = (
-                    f"Sir, soll ich '{source.name}' wirklich nach "
-                    f"'{destination_folder}' verschieben? (Ja/Nein)"
-                )
-                self.history.add_assistant(answer)
-                return answer
+                    answer = (
+                        f"Sir, soll ich '{source.name}' wirklich nach "
+                        f"'{destination_folder}' verschieben? (Ja/Nein)"
+                    )
+                    self.history.add_assistant(answer)
+                    return answer
 
             answer = skill.execute(prompt)
 
@@ -324,6 +332,34 @@ class ConversationManager:
                     return "Die Datei wurde verschoben."
 
                 return "Die Datei konnte nicht verschoben werden."
+
+            if action in ("copy_file_overwrite", "move_file_overwrite"):
+                if file_path is None or destination_path is None:
+                    return "Quelle oder Ziel der Datei konnte nicht ermittelt werden."
+
+                overwrite_move = action == "move_file_overwrite"
+                if overwrite_move:
+                    success = FileActions.move_file(
+                        file_path,
+                        destination_path,
+                        overwrite=True,
+                    )
+                    return (
+                        "Die Datei wurde verschoben und die Zieldatei ersetzt."
+                        if success
+                        else "Die Datei konnte nicht verschoben werden."
+                    )
+
+                success = FileActions.copy_file(
+                    file_path,
+                    destination_path,
+                    overwrite=True,
+                )
+                return (
+                    "Die Datei wurde kopiert und die Zieldatei ersetzt."
+                    if success
+                    else "Die Datei konnte nicht kopiert werden."
+                )
 
             # -----------------------------------------------------
             # Datei umbenennen

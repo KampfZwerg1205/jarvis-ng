@@ -133,6 +133,51 @@ class ConversationManager:
                 return answer
 
             # -----------------------------------------------------
+            # Datei umbenennen
+            # -----------------------------------------------------
+
+            if skill.name == "file_rename":
+                source_name, new_name = skill._parse_command(prompt)
+
+                if source_name is None:
+                    answer = "Ich konnte die Datei nicht erkennen."
+                    self.history.add_assistant(answer)
+                    return answer
+
+                if new_name is None:
+                    answer = "Ich konnte den neuen Dateinamen nicht erkennen."
+                    self.history.add_assistant(answer)
+                    return answer
+
+                source = skill._find_source(source_name)
+                if source is None:
+                    answer = f"Ich konnte '{source_name}' nicht finden."
+                    self.history.add_assistant(answer)
+                    return answer
+
+                if Path(new_name).name != new_name:
+                    answer = "Der neue Name darf keinen Pfad enthalten."
+                    self.history.add_assistant(answer)
+                    return answer
+
+                destination = source.with_name(new_name)
+                if destination.exists():
+                    answer = f"'{new_name}' existiert bereits."
+                    self.history.add_assistant(answer)
+                    return answer
+
+                self.pending_action = "rename_file"
+                self.pending_file = str(source)
+                self.pending_destination = str(destination)
+
+                answer = (
+                    f"Sir, soll ich '{source.name}' wirklich in "
+                    f"'{new_name}' umbenennen? (Ja/Nein)"
+                )
+                self.history.add_assistant(answer)
+                return answer
+
+            # -----------------------------------------------------
             # Datei verschieben
             # -----------------------------------------------------
 
@@ -279,6 +324,23 @@ class ConversationManager:
                     return "Die Datei wurde verschoben."
 
                 return "Die Datei konnte nicht verschoben werden."
+
+            # -----------------------------------------------------
+            # Datei umbenennen
+            # -----------------------------------------------------
+
+            if action == "rename_file":
+                if file_path is None or destination_path is None:
+                    return "Quelle oder Ziel der Datei konnte nicht ermittelt werden."
+
+                destination = Path(destination_path)
+                if destination.exists():
+                    return f"'{destination.name}' existiert bereits."
+
+                if FileActions.rename_file(file_path, destination.name):
+                    return "Die Datei wurde umbenannt."
+
+                return "Die Datei konnte nicht umbenannt werden."
 
             # -----------------------------------------------------
             # Herunterfahren

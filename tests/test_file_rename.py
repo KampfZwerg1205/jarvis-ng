@@ -1,6 +1,8 @@
 from pathlib import Path
 from unittest.mock import patch
 
+from jarvis.ai.router import AIRouter
+from jarvis.conversation.manager import ConversationManager
 from jarvis.skills.file_rename import FileRenameSkill
 
 
@@ -76,3 +78,55 @@ def test_file_rename_renames_absolute_source(rename_file, tmp_path: Path) -> Non
 
     assert result == "Ich habe 'report.pdf' in 'Annual Report.PDF' umbenannt."
     rename_file.assert_called_once_with(source, "Annual Report.PDF")
+
+
+@patch("jarvis.conversation.manager.FileActions.rename_file", return_value=True)
+def test_conversation_confirms_rename_before_renaming(rename_file, tmp_path: Path) -> None:
+    source = tmp_path / "Report.pdf"
+    source.write_text("report", encoding="utf-8")
+    manager = ConversationManager(AIRouter())
+
+    response = manager.chat(f"Benenne {source} um in Annual Report.PDF")
+
+    assert "wirklich" in response
+    assert "umbenennen?" in response
+    rename_file.assert_not_called()
+
+    result = manager.chat("Ja")
+
+    assert result == "Die Datei wurde umbenannt."
+    rename_file.assert_called_once_with(str(source), "Annual Report.PDF")
+
+
+@patch("jarvis.conversation.manager.FileActions.rename_file")
+def test_conversation_can_cancel_rename(rename_file, tmp_path: Path) -> None:
+    source = tmp_path / "Report.pdf"
+    source.write_text("report", encoding="utf-8")
+    manager = ConversationManager(AIRouter())
+
+    manager.chat(f"Benenne {source} um in Annual Report.PDF")
+    result = manager.chat("Nein")
+
+    assert result == "Verstanden. Der Vorgang wurde abgebrochen."
+    assert manager.pending_action is None
+    assert manager.pending_file is None
+    assert manager.pending_destination is None
+    rename_file.assert_not_called()
+
+
+@patch("jarvis.conversation.manager.FileActions.rename_file")
+def test_conversation_does_not_overwrite_existing_file_on_rename(
+    rename_file,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "Report.pdf"
+    destination = tmp_path / "Annual Report.PDF"
+    source.write_text("source", encoding="utf-8")
+    destination.write_text("keep this", encoding="utf-8")
+    manager = ConversationManager(AIRouter())
+
+    result = manager.chat(f"Benenne {source} um in {destination.name}")
+
+    assert "existiert bereits" in result
+    assert manager.pending_action is None
+    rename_file.assert_not_called()
